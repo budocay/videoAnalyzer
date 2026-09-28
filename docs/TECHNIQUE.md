@@ -209,6 +209,23 @@ Vidéo réelle de 11.6 s (HEVC 4K 60 fps HDR HLG, portrait, parole en français)
   Ollama découpe les images de qwen3-vl plus finement que mlx-vlm, d'où environ 4 fois plus de tokens.
 - **Estimation mémoire du `--dry-run`** : poids + 1.1 Go + 0.22 Go par millier de tokens de prompt (juste à 0.1 Go près).
 
+### Windows, Ryzen 7 5800X3D + Radeon RX 7900 XT 20 Go (ROCm 7.2.1, Ollama)
+
+Finale de Paris en `.mkv` (VP9 2560×1440 60 i/s, 29 min, 197 plans dont 87 de jeu = 85 000 images à suivre) :
+
+| Étape | Durée / débit | Calcul |
+|---|---|---|
+| Coupes + images clés | 5 min | processeur (ffmpeg ~8 cœurs) |
+| Tri des plans (183) | 11 min | GPU, `llama-server` 75–95 %, qwen3-vl:8b `100% GPU` |
+| Terrain + score | 6 min | GPU (Ollama) |
+| Pose, avant correction du tube | 11.6 img/s (~2 h), GPU ~10 %, Python 1 cœur | GPU ROCm |
+| Pose, après correction | 48 img/s (~30 min), positions identiques | GPU ROCm |
+
+Décomposition de la pose (1440p) : ffmpeg seul 444 img/s ; tube Windows avec gros tampon Python 20 img/s,
+sans tampon + `readinto` 95 img/s ; `predict` YOLO 70 img/s (préparation CPU 6.8 ms, réseau 6.6 ms, post 1.2 ms) ;
+réseau seul 275 img/s. fp16 : +18 % mais 12 % des images changent de plus de 3 px (non retenu) ; lots 8/16/32 : pas
+d'écart. Le décodage GPU (AMF/D3D11VA) n'apporterait rien : ffmpeg n'est plus le facteur limitant.
+
 ---
 
 ## 8. Schémas JSON

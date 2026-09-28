@@ -142,6 +142,9 @@ Pitfalls hit in phase 2:
   Fixed: VLM chooses only among strokes allowed by pose height (±2 frames around the speed peak; ±5 caught
   the racket preparation) and distance to net; bandeja/víbora merged in the report.
 - Full cold run ≈ 50 min for the 15-min montage; report-only rerun 30 s (everything cached).
+- Windows pipes: `Popen(bufsize=<large>)` + `read(size)` capped 1440p rawvideo at 20 img/s (Python 1 core, GPU idle);
+  `bufsize=0` + `readinto` a preallocated frame in a reader thread → 95 img/s decode, pose 11.6 → 48 img/s on the
+  RX 7900 XT. Remaining limit: ultralytics CPU preprocess (6.8 ms/img at 1440p). fp16 rejected (moves keypoints).
 
 Learning loop (padel/dataset.py, classifier.py, learn.py; CLI `video-analyzer padel annotate|import-labels|eval|train`):
 - Ground truth in data/labels/<key>.json (repo, not cache). Bootstrap: 150 hits labelled by Claude from image
