@@ -118,6 +118,7 @@ def main_padel_tools(argv) -> int:
         already = {k for k, v in DS.load_labels(key).items() if v["annotator"] == "user"}
         pick = DS.select_for_annotation(hits, args.n, already)
         out = args.out or DS.DATA_DIR / "annotation" / key
+        print(f"• Préparation des images de {len(pick)} frappes (la page s'ouvre à la fin)", flush=True)
         page = DS.export_page(info, pick, tracks, out)
         print(f"✔ {page} ({len(pick)} frappes, {len(already)} déjà annotées)")
         if not args.no_open:

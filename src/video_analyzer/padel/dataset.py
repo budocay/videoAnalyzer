@@ -88,13 +88,16 @@ def select_for_annotation(hits: list[Hit], n: int, already: set[str], seed: int 
     return picked[:n]
 
 
-def export_page(info: VideoInfo, hits: list[Hit], tracks: dict[int, ShotTracks], out_dir: Path) -> Path:
+def export_page(info: VideoInfo, hits: list[Hit], tracks: dict[int, ShotTracks], out_dir: Path,
+                log=print) -> Path:
     img_dir = out_dir / "img"
     img_dir.mkdir(parents=True, exist_ok=True)
     from PIL import Image
 
     items = []
-    for h in hits:
+    for n, h in enumerate(hits, 1):
+        if n % 20 == 0 or n == len(hits):
+            log(f"  images {n}/{len(hits)}")
         name = f"{h.key.replace(':', '_')}.jpg"
         path = img_dir / name
         if not path.exists():

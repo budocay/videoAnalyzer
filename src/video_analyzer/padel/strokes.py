@@ -251,11 +251,18 @@ def hit_crops(info: VideoInfo, hit: Hit, tr: ShotTracks, size: int = 336,
     lead = max(0.0, -min(offsets)) + 0.05
     span = lead + max(0.0, max(offsets)) + 0.1
     start = max(0.0, hit.t - lead)
+    fps = info.native_fps  # these frames are decoded at the source rate, not the (<= 30 img/s) pose rate
+    picks = [max(0, round((d + hit.t - start) * fps)) for d in offsets]
+    centre = max(0, round((hit.t - start) * fps))
+    # only the needed frames leave ffmpeg (select): the whole span at 1440p60 was ~500 MB through the pipe per hit
+    wanted = sorted(set(picks + ([centre] if context else [])))
+    sel = "+".join(f"eq(n\\,{i})" for i in wanted)
     raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{span:.3f}",
-                          "-i", str(info.path), "-map", "0:v:0", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                          "-i", str(info.path), "-map", "0:v:0", "-vf", f"select={sel}", "-fps_mode", "passthrough",
+                          "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
                          capture_output=True).stdout
     n = len(raw) // (w * h * 3)
-    frames = np.frombuffer(raw[:n * w * h * 3], np.uint8).reshape(n, h, w, 3)
+    got = np.frombuffer(raw[:n * w * h * 3], np.uint8).reshape(n, h, w, 3)
     k = tr.kpts[hit.frame, hit.slot]
     ok = k[:, 2] > 0.3
     if ok.sum() < 3 or n == 0:
@@ -264,17 +271,17 @@ def hit_crops(info: VideoInfo, hit: Hit, tr: ShotTracks, size: int = 336,
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     half = max(y1 - y0, x1 - x0, 60) * 1.1  # room for the racket above the head
     box = (int(max(0, cx - half)), int(max(0, cy - half * 1.1)), int(min(w, cx + half)), int(min(h, cy + half * 0.9)))
-    fps = info.native_fps  # these frames are decoded at the source rate, not the (<= 30 img/s) pose rate
-    picks = [round((d + hit.t - start) * fps) for d in offsets]
+
+    def frame(i):  # i-th frame of the span; past the end of the video → last decoded one
+        return got[min(wanted.index(i), n - 1)]
+
     out = []
     if context:
-        f = frames[min(max(round((hit.t - start) * fps), 0), n - 1)]
-        im = Image.fromarray(f)
+        im = Image.fromarray(frame(centre))
         ImageDraw.Draw(im).rectangle(box, outline=(255, 230, 0), width=6)
         out.append(im.resize((round(size * w / h), size)))
     for i in picks:
-        f = frames[min(max(i, 0), n - 1)]
-        out.append(Image.fromarray(f[box[1]:box[3], box[0]:box[2]]).resize((size, size)))
+        out.append(Image.fromarray(frame(i)[box[1]:box[3], box[0]:box[2]]).resize((size, size)))
     return out
 
 
