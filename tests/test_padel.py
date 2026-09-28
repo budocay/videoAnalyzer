@@ -11,6 +11,17 @@ def st(games, points):
     return ScoreState(["A", "B"], [True, False], games, points)
 
 
+def test_pose_fps_caps_high_frame_rates():
+    from types import SimpleNamespace
+
+    from video_analyzer.padel.players import pose_fps
+
+    assert pose_fps(SimpleNamespace(native_fps=60.0)) == 30.0
+    assert pose_fps(SimpleNamespace(native_fps=50.0)) == 30.0
+    assert pose_fps(SimpleNamespace(native_fps=29.97)) == 29.97  # settings were tuned at this rate
+    assert pose_fps(SimpleNamespace(native_fps=25.0)) == 25.0
+
+
 def test_split_shots_merges_short_fragments():
     fps = 30
     d = np.zeros(300)

@@ -264,7 +264,7 @@ def hit_crops(info: VideoInfo, hit: Hit, tr: ShotTracks, size: int = 336,
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     half = max(y1 - y0, x1 - x0, 60) * 1.1  # room for the racket above the head
     box = (int(max(0, cx - half)), int(max(0, cy - half * 1.1)), int(min(w, cx + half)), int(min(h, cy + half * 0.9)))
-    fps = tr.fps
+    fps = info.native_fps  # these frames are decoded at the source rate, not the (<= 30 img/s) pose rate
     picks = [round((d + hit.t - start) * fps) for d in offsets]
     out = []
     if context:

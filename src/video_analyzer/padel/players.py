@@ -26,6 +26,14 @@ from .video_io import stream
 POSE_MODEL = "yolo11n-pose.pt"
 IMGSZ = 1920
 BATCH = 8
+# Pose is sampled at <= 30 img/s whatever the source: every per-frame setting downstream (wrist speed per frame and
+# its smash/bandeja thresholds, ±2-frame contact height, classifier window of ±15 frames, smoothing) was tuned on the
+# ~30 img/s Paris final. A 60 img/s source would halve per-frame speeds and the classifier's time span, and cost 2x.
+POSE_FPS = 30.0
+
+
+def pose_fps(info: VideoInfo) -> float:
+    return POSE_FPS if info.native_fps > POSE_FPS * 1.05 else info.native_fps
 MARGIN = 0.6  # metres outside the lines still counted as "on court" (players lean on the glass)
 MAX_JUMP = 2.5  # metres a player can move between two frames before the slot is considered lost
 
@@ -82,7 +90,8 @@ class PoseTracker:
         self.model = YOLO(str(model_dir / POSE_MODEL))
         self.device = torch_device()  # cuda, mps or cpu
 
-    def _detect(self, frames: list[np.ndarray]):
+    def _detect(self, frames: list[np.ndarray], up: float = 1.0):
+        """frames may be downscaled from court.frame_size; `up` maps their pixels back to it."""
         res = self.model.predict(frames, imgsz=IMGSZ, device=self.device, verbose=False, conf=0.25)
         out = []
         for frame, r in zip(frames, res):
@@ -91,25 +100,32 @@ class PoseTracker:
                 continue
             boxes = r.boxes.xyxy.cpu().numpy()
             kp = r.keypoints.data.cpu().numpy()  # (N,17,3)
+            cols = [_torso_color(frame, k) for k in kp]
+            boxes *= up
+            kp[..., :2] *= up
             feet = np.array([_feet(k, b) for k, b in zip(kp, boxes)])
             cpos = self.court.to_court(feet)
             dets = []
-            for p, k in zip(cpos, kp):
+            for p, k, c in zip(cpos, kp, cols):
                 if -MARGIN <= p[0] <= COURT_WIDTH + MARGIN and -MARGIN <= p[1] <= COURT_LENGTH + MARGIN:
-                    dets.append((p, k, _torso_color(frame, k)))
+                    dets.append((p, k, c))
             out.append(dets)
         return out
 
     def track_shot(self, info: VideoInfo, shot_id: int, start: float, end: float) -> ShotTracks:
-        fps = info.native_fps
+        fps = pose_fps(info)
         w, h = self.court.frame_size
-        frames = stream(info, w, h, start=start, end=end)
+        # ffmpeg downscales to the detector size itself: YOLO would do it anyway, single-threaded on the CPU
+        # (6.8 ms/img at 1440p), and the pipe carries 44 % less. Keypoints are mapped back to w x h.
+        up = max(1.0, max(w, h) / IMGSZ)
+        sw, sh = round(w / up / 2) * 2, round(h / up / 2) * 2
+        frames = stream(info, sw, sh, start=start, end=end, fps=fps if fps != info.native_fps else None)
         pos, kpts, cols = [], [], [[] for _ in range(4)]
         prev = np.full((4, 2), np.nan)
         batch = []
 
         def flush():
-            for dets in self._detect(batch):
+            for dets in self._detect(batch, w / sw):
                 p_t = np.full((4, 2), np.nan)
                 k_t = np.zeros((4, 17, 3))
                 for side, slots in ((0, (0, 1)), (1, (2, 3))):
@@ -161,7 +177,14 @@ def track_rallies(info: VideoInfo, court: Court, shots, cache: Path, model_dir: 
     tracks = []
     rallies = [s for s in shots if s.rally]
     total = sum(s.duration for s in rallies)
+    fps = pose_fps(info)
+    stale = [p for p in out_dir.glob("shot*.npz") if abs(ShotTracks.load(p).fps - fps) > 0.01]
+    if stale:  # tracks from before POSE_FPS: frame indices of cached hits no longer match
+        log(f"  {len(stale)} pistes à {ShotTracks.load(stale[0]).fps:g} img/s recalculées à {fps:g} img/s")
+        for p in stale + list(cache.glob("hits*.json")):
+            p.unlink()
     done_s, t_all = 0.0, time.perf_counter()
+    computed = 0.0
     for k, s in enumerate(rallies, 1):
         path = out_dir / f"shot{s.id:04d}.npz"
         if path.exists():
@@ -174,10 +197,12 @@ def track_rallies(info: VideoInfo, court: Court, shots, cache: Path, model_dir: 
         tr.save(path)
         tracks.append(tr)
         done_s += s.duration
+        computed += s.duration
         seen = np.isfinite(tr.pos[..., 0]).mean(axis=0)
         el = time.perf_counter() - t_all
-        log(f"  [{k}/{len(rallies)}] plan {s.id} {s.duration:.1f}s → {len(tr.pos)} frames en "
-            f"{time.perf_counter() - t:.1f}s · présence joueurs {np.round(seen, 2).tolist()} · "
-            f"reste ~{el / max(done_s, 1e-6) * (total - done_s) / 60:.1f} min")
+        dt = time.perf_counter() - t
+        log(f"  [{k}/{len(rallies)}] plan {s.id} {s.duration:.1f}s → {len(tr.pos)} images en "
+            f"{dt:.1f}s ({len(tr.pos) / max(dt, 1e-6):.0f} img/s) · présence joueurs {np.round(seen, 2).tolist()} · "
+            f"reste ~{el / computed * (total - done_s) / 60:.1f} min")
     (cache / "tracks" / "index.json").write_text(json.dumps([t.shot_id for t in tracks]), encoding="utf-8")
     return tracks

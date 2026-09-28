@@ -144,7 +144,10 @@ Pitfalls hit in phase 2:
 - Full cold run ≈ 50 min for the 15-min montage; report-only rerun 30 s (everything cached).
 - Windows pipes: `Popen(bufsize=<large>)` + `read(size)` capped 1440p rawvideo at 20 img/s (Python 1 core, GPU idle);
   `bufsize=0` + `readinto` a preallocated frame in a reader thread → 95 img/s decode, pose 11.6 → 48 img/s on the
-  RX 7900 XT. Remaining limit: ultralytics CPU preprocess (6.8 ms/img at 1440p). fp16 rejected (moves keypoints).
+  RX 7900 XT. fp16 rejected (moves keypoints). Then ffmpeg downscales to IMGSZ itself (ultralytics' CPU letterbox
+  fought ffmpeg for cores) and pose is sampled at POSE_FPS=30 → 73 img/s = 2.4 s of video/s on 1440p60.
+- All stroke/hit settings are per *frame* (wrist speed/frame, smash speed > 0.45, ±2 frames, classifier ±15 frames),
+  tuned at ~30 img/s: never feed tracks at another rate (players.pose_fps). hit_crops decodes at native fps.
 
 Learning loop (padel/dataset.py, classifier.py, learn.py; CLI `video-analyzer padel annotate|import-labels|eval|train`):
 - Ground truth in data/labels/<key>.json (repo, not cache). Bootstrap: 150 hits labelled by Claude from image

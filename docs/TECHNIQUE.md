@@ -219,12 +219,21 @@ Finale de Paris en `.mkv` (VP9 2560×1440 60 i/s, 29 min, 197 plans dont 87 de j
 | Tri des plans (183) | 11 min | GPU, `llama-server` 75–95 %, qwen3-vl:8b `100% GPU` |
 | Terrain + score | 6 min | GPU (Ollama) |
 | Pose, avant correction du tube | 11.6 img/s (~2 h), GPU ~10 %, Python 1 cœur | GPU ROCm |
-| Pose, après correction | 48 img/s (~30 min), positions identiques | GPU ROCm |
+| Pose, tube corrigé | 48 img/s (~30 min), positions identiques | GPU ROCm |
+| Pose, 30 img/s + réduction 1920 px par ffmpeg | 73 img/s = 2.4 s de vidéo/s (~10 min), écart médian 8 mm | GPU ROCm |
 
 Décomposition de la pose (1440p) : ffmpeg seul 444 img/s ; tube Windows avec gros tampon Python 20 img/s,
 sans tampon + `readinto` 95 img/s ; `predict` YOLO 70 img/s (préparation CPU 6.8 ms, réseau 6.6 ms, post 1.2 ms) ;
 réseau seul 275 img/s. fp16 : +18 % mais 12 % des images changent de plus de 3 px (non retenu) ; lots 8/16/32 : pas
 d'écart. Le décodage GPU (AMF/D3D11VA) n'apporterait rien : ffmpeg n'est plus le facteur limitant.
+
+Décodage (93 img/s) et détection (64 img/s) mesurés séparément, mais 32 img/s ensemble : ffmpeg (tous les cœurs)
+et le redimensionnement 2560→1920 d'ultralytics se disputaient le processeur. ffmpeg sort maintenant directement
+à 1920 px de grand côté (`IMGSZ`), les points sont remis à l'échelle du terrain.
+
+La pose est échantillonnée à 30 img/s au plus (`players.POSE_FPS`) : tous les réglages en images (vitesse du poignet
+par image et seuils smash/bandeja, ±2 images pour la hauteur de frappe, fenêtre ±15 images du classifieur, lissage)
+ont été calés sur la finale de Paris à ~30 img/s. Les pistes en cache à une autre fréquence sont recalculées.
 
 ---
 
