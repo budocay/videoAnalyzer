@@ -85,6 +85,9 @@ class PoseTracker:
         from ultralytics import YOLO
 
         from ..backend import torch_device
+        from ..console import setup_streams
+
+        setup_streams()  # ultralytics forces stdout to UTF-8 on Windows: garbled accents through a pipe
 
         self.court = court
         self.model = YOLO(str(model_dir / POSE_MODEL))

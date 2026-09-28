@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from . import config as C
+from .console import setup_streams
 from .extract import FFmpegError, probe
 from .timeline import fmt
 
@@ -66,6 +67,7 @@ def main_padel(argv) -> int:
     else:
         missing.append(POSE_MODEL)
         from ultralytics.utils.downloads import attempt_download_asset
+        setup_streams()  # ultralytics forces stdout to UTF-8 on Windows
         attempt_download_asset(model_dir / POSE_MODEL)
     if missing:
         print(f"• Téléchargement nécessaire (une seule fois) : {', '.join(missing)}")
@@ -199,40 +201,8 @@ def doctor() -> int:
     return 0 if ok else 1
 
 
-_ASCII = {"▶": ">", "•": "-", "✔": "OK", "✗": "x", "⚠": "!", "—": "-", "–": "-", "…": "...", "→": "->",
-          "·": "-", "’": "'", "«": '"', "»": '"'}
-
-
-def _ascii_fallback(e: UnicodeEncodeError):
-    return "".join(_ASCII.get(c, "?") for c in e.object[e.start:e.end]), e.end
-
-
-def _setup_streams() -> None:
-    """A real console gets UTF-8 (WriteConsoleW). A pipe on Windows (`| Out-Host`, `| Tee-Object`) is decoded by
-    PowerShell/cmd with the console code page (often 850 or 1252): write in that one, ASCII fallbacks for symbols."""
-    import codecs
-
-    codecs.register_error("va_ascii", _ascii_fallback)
-    piped = "utf-8"
-    if sys.platform == "win32":
-        import ctypes
-
-        cp = ctypes.windll.kernel32.GetConsoleOutputCP()  # 0 when no console is attached
-        if cp and cp != 65001:
-            try:
-                piped = codecs.lookup(f"cp{cp}").name
-            except LookupError:
-                pass
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            tty = stream.isatty()
-            stream.reconfigure(encoding="utf-8" if tty else piped, errors="replace" if tty else "va_ascii")
-        except (AttributeError, ValueError):
-            pass
-
-
 def main(argv=None) -> int:
-    _setup_streams()
+    setup_streams()
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "doctor":
         return doctor()
