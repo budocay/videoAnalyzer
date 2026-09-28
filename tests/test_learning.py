@@ -77,6 +77,22 @@ def test_selection_uses_classifier_least_confident_first():
     assert [h.frame for h in picked[:2]] == [100, 101]
 
 
+def test_collect_uses_saved_features_without_cache(tmp_path):
+    from video_analyzer.padel import learn as L
+
+    (tmp_path / "labels").mkdir()
+    (tmp_path / "labels" / "v-abc.json").write_text(json.dumps({"video": "v.mp4", "key": "v-abc", "labels": {
+        "1:10:2": {"label": "smash", "annotator": "user"}, "1:20:2": {"label": "incertain", "annotator": "user"}}}))
+    missing = []
+    assert L.collect(tmp_path / "no_cache", tmp_path, missing) == [] and missing == ["v-abc"]
+    x = np.arange(5, dtype=np.float32)
+    L._save_features("v-abc", [("1:10:2", x, "", "bandeja"), ("1:20:2", x, "", "lob")], tmp_path)
+    missing = []
+    s = L.collect(tmp_path / "no_cache", tmp_path, missing)
+    assert missing == [] and [(o.key, o.y, o.pose) for o in s] == [("1:10:2", "smash", "bandeja")]  # incertain dropped
+    assert np.array_equal(s[0].x, x)
+
+
 def test_classifier_beats_vlm_handles_missing_vlm_measure():
     from video_analyzer.padel.learn import classifier_beats_vlm
 

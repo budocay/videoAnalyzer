@@ -42,29 +42,74 @@ def _labelled_keys(data_dir: Path) -> list[str]:
     return sorted(p.stem for p in (data_dir / "labels").glob("*.json"))
 
 
-def collect(cache_root: Path, data_dir: Path = DATA_DIR) -> list[CL.Sample]:
+def _features_path(key: str, data_dir: Path) -> Path:
+    return data_dir / "features" / f"{key}.npz"
+
+
+def _save_features(key: str, rows: list[tuple[str, "np.ndarray", str, str]], data_dir: Path) -> None:
+    """Pose features of the labelled hits, kept in the repo: training on another machine does not need the
+    video or its cache (labels are re-applied at load time, so relabelling stays possible)."""
+    import numpy as np
+
+    p = _features_path(key, data_dir)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(p, keys=np.array([r[0] for r in rows]), x=np.stack([r[1] for r in rows]),
+                        vlm=np.array([r[2] for r in rows]), pose=np.array([r[3] for r in rows]),
+                        feature_version=CL.FEATURE_VERSION, pose_fps=CL.POSE_FPS)
+
+
+def _load_features(key: str, data_dir: Path) -> list[tuple[str, "np.ndarray", str, str]] | None:
+    import numpy as np
+
+    p = _features_path(key, data_dir)
+    if not p.exists():
+        return None
+    d = np.load(p)
+    if int(d["feature_version"]) != CL.FEATURE_VERSION:
+        return None
+    return list(zip(d["keys"].tolist(), d["x"], d["vlm"].tolist(), d["pose"].tolist()))
+
+
+def collect(cache_root: Path, data_dir: Path = DATA_DIR, missing: list | None = None) -> list[CL.Sample]:
+    """Labelled samples of every video: from its padel cache when present (features are then refreshed in
+    data/features/), else from data/features/. Videos with neither are appended to `missing`."""
     samples = []
     for key in _labelled_keys(data_dir):
         labels = load_labels(key, data_dir)
         try:
             hits, tracks = load_hits(key, cache_root)
+            rows = [(h.key, x, h.stroke_vlm, h.stroke_pose) for h in hits if h.key in labels
+                    and (x := CL.hit_features(h, tracks[h.shot_id])) is not None]
+            if rows:
+                _save_features(key, rows, data_dir)
         except FileNotFoundError:
-            continue
-        for h in hits:
-            lab = labels.get(h.key)
-            y = CL.target(lab["label"]) if lab else None
-            if y is None:
+            rows = _load_features(key, data_dir)
+            if rows is None:
+                if missing is not None:
+                    missing.append(key)
                 continue
-            x = CL.hit_features(h, tracks[h.shot_id])
-            if x is not None:
-                samples.append(CL.Sample(x, y, key, h.key, h.stroke_vlm, h.stroke_pose))
+        for hkey, x, vlm, pose in rows:
+            lab = labels.get(hkey)
+            y = CL.target(lab["label"]) if lab else None
+            if y is not None:
+                samples.append(CL.Sample(x, y, key, hkey, vlm, pose))
     return samples
 
 
-def train_all(cache_root: Path, data_dir: Path = DATA_DIR) -> tuple[Path, dict]:
-    samples = collect(cache_root, data_dir)
+def train_all(cache_root: Path, data_dir: Path = DATA_DIR, log=print) -> tuple[Path, dict]:
+    missing: list[str] = []
+    samples = collect(cache_root, data_dir, missing)
+    for key in missing:
+        n = len(load_labels(key, data_dir))
+        log(f"⚠ {n} annotations de {key} non utilisées : ni cache d'analyse sur cette machine, ni "
+            f"data/features/{key}.npz (lancer `padel train` une fois sur la machine qui a le cache, puis commiter)")
     bundle, report = CL.train(samples)
+    report["videos"] = dict(Counter(s.video for s in samples))
+    report["missing_videos"] = missing
     path = cache_root / "models" / MODEL_NAME
+    if path.exists():  # keep the previous model: `copy stroke_clf.prev.pt stroke_clf.pt` to roll back
+        shutil.copy2(path, path.with_suffix(".prev.pt"))
+        shutil.copy2(path.with_suffix(".json"), path.with_name(path.stem + ".prev.json"))
     CL.save(bundle, path)
     out = data_dir / "eval"
     out.mkdir(parents=True, exist_ok=True)
@@ -88,7 +133,10 @@ def _conf_md(conf: dict[str, dict[str, int]]) -> list[str]:
 
 def _train_md(r: dict) -> str:
     md = ["# Entraînement du classifieur de coups", "",
-          f"{r['n']} frappes annotées utilisées, validation croisée en {r['folds']} plis.", "",
+          f"{r['n']} frappes annotées utilisées, validation croisée en {r['folds']} plis.",
+          f"Vidéos : {r.get('videos', {})}"
+          + (f" · **non utilisées (pas de cache ni de features)** : {r['missing_videos']}" if r.get("missing_videos") else ""),
+          "",
           "| Méthode | Précision sur les mêmes frappes |", "|---|---|"]
     for k, v in r["accuracy"].items():
         md.append(f"| {k} | {_pct(v)} |")

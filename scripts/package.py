@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-INCLUDE = ["src", "tests", "scripts", "docs", "data/labels", "data/eval", "data/references",
+INCLUDE = ["src", "tests", "scripts", "docs", "data/labels", "data/features", "data/eval", "data/references",
            "install.sh", "install.cmd", "va.sh", "va.cmd", "pyproject.toml", "README.md", "CLAUDE.md", ".gitignore"]
 SKIP_PARTS = {"__pycache__", ".pytest_cache", ".DS_Store"}
 MODEL_CACHE = Path.home() / ".cache" / "video-analyzer" / "models"

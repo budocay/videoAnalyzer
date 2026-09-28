@@ -1,0 +1,790 @@
+{
+ "video": "padel_paris_final_hl.mkv",
+ "key": "padel_paris_final_hl-a0c2b4f5baae",
+ "labels": {
+  "54:312:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "66:172:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "154:498:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "99:242:0": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "99:469:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "93:49:0": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "168:4:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "156:177:2": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "17:82:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "10:928:1": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "39:57:0": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "53:14:3": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "79:646:2": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "131:187:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "33:236:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "25:267:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "101:85:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "111:33:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "36:541:3": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "79:724:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "25:259:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "49:189:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "56:24:1": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "33:181:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "182:486:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "14:227:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "89:2:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "3:418:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "83:243:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "131:238:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "185:61:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "17:370:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "10:98:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "95:395:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "114:408:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "180:164:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "58:207:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "191:350:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "14:30:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "10:545:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "178:1162:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "64:425:2": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "95:124:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "105:242:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "44:345:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "44:151:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "116:276:3": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "44:57:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "79:712:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "47:115:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "56:250:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "178:673:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "10:655:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "95:322:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "83:312:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "41:124:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "166:210:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "150:547:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "56:194:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "36:636:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "85:535:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "44:295:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "6:342:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "6:212:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "182:193:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "64:1238:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "130:216:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "141:847:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "95:55:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "127:1047:0": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "178:869:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "17:286:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "180:117:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "10:155:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "99:535:2": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "95:258:1": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "105:42:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "61:94:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "74:58:2": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "79:552:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "3:441:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "8:48:2": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "33:12:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "150:971:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "10:1014:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "64:957:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "85:513:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "150:753:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "53:265:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "97:301:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "137:118:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "107:8:0": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "6:34:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "101:142:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "10:453:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "178:1014:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "168:301:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "29:291:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "165:82:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "191:209:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "103:119:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "122:468:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "81:95:2": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "29:9:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "109:277:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "72:80:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "154:522:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "33:69:1": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "87:143:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "127:213:1": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "171:11:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "74:306:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "10:864:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "53:572:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "23:129:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "64:879:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "163:574:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "15:39:3": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "178:38:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "141:689:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "103:375:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "171:240:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "10:303:3": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "64:625:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "190:207:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "58:229:2": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "194:63:1": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "95:170:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "137:206:0": {
+   "label": "vibora",
+   "annotator": "user"
+  },
+  "64:269:3": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "174:62:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "127:832:2": {
+   "label": "vibora",
+   "annotator": "user"
+  },
+  "72:35:3": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "47:28:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "166:103:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "85:237:0": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "182:166:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "178:1150:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "191:147:1": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "185:103:3": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "23:102:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "25:388:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "36:160:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "89:224:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "87:468:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "168:174:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "176:479:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "141:275:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "180:66:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "178:595:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "130:115:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "178:74:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "69:138:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "176:420:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "74:273:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "125:138:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "178:993:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "8:11:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "87:259:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "141:217:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "17:487:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "99:31:0": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "85:44:0": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "141:826:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "79:316:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "36:691:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "109:417:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "61:251:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "182:74:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "36:667:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "4:383:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "150:560:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "10:497:3": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "72:8:0": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "29:217:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "141:412:0": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "116:356:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "97:219:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "29:211:2": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "158:28:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "131:121:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "64:1009:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "66:118:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "23:170:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "64:1112:3": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "66:396:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "171:140:1": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "158:67:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "39:238:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "185:183:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "122:51:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "146:159:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "36:451:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "182:445:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "17:251:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "163:939:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  }
+ }
+}
