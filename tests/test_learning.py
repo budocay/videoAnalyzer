@@ -62,3 +62,25 @@ def test_selection_puts_disagreements_first():
     hits += [_hit(stroke="smash", vlm="smash", pose="bandeja", frame=100 + i) for i in range(4)]
     picked = DS.select_for_annotation(hits, 8, already=set())
     assert {h.frame for h in picked[:4]} == {100, 101, 102, 103}
+
+
+def test_selection_uses_classifier_least_confident_first():
+    hits = [_hit(stroke="revers", pose="revers", frame=i) for i in range(10)]
+    for h in hits:
+        h.stroke_clf, h.clf_prob = "revers", 0.9
+    unsure, sure = _hit(pose="revers", frame=100), _hit(pose="revers", frame=101)
+    unsure.stroke_clf, unsure.clf_prob = "lob", 0.3
+    sure.stroke_clf, sure.clf_prob = "lob", 0.8
+    same = _hit(pose="vibora", frame=102)  # bandeja/víbora are one class: not a disagreement
+    same.stroke_clf, same.clf_prob = "bandeja_vibora", 0.1
+    picked = DS.select_for_annotation(hits + [sure, same, unsure], 8, already=set())
+    assert [h.frame for h in picked[:2]] == [100, 101]
+
+
+def test_classifier_beats_vlm_handles_missing_vlm_measure():
+    from video_analyzer.padel.learn import classifier_beats_vlm
+
+    assert classifier_beats_vlm({"cv_accuracy": 0.44, "vlm_accuracy": 0.22})
+    assert not classifier_beats_vlm({"cv_accuracy": 0.20, "vlm_accuracy": 0.22})
+    assert classifier_beats_vlm({"cv_accuracy": 0.44, "vlm_accuracy": float("nan")})  # hits analysed without VLM
+    assert not classifier_beats_vlm(None)

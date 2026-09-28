@@ -22,6 +22,22 @@ MODEL_NAME = "stroke_clf.pt"
 REJECT_PROB = 0.7  # classifier says "not a hit" with at least this probability → hit dropped
 
 
+def classifier_beats_vlm(bundle: dict | None) -> bool:
+    """The trained classifier replaces the VLM's stroke labels when its cross-validated accuracy is at least the
+    VLM's on the same labels. No VLM measurement (NaN: hits analysed without the VLM) counts as 0."""
+    if bundle is None:
+        return False
+    vlm = bundle.get("vlm_accuracy")
+    vlm = 0.0 if vlm is None or vlm != vlm else vlm
+    return bundle["cv_accuracy"] >= vlm
+
+
+def use_vlm_for_strokes(cache_root: Path) -> bool:
+    """Auto mode of `padel`: the per-hit VLM check (~5 s/hit on an RX 7900 XT, ~7k tokens) is only worth it
+    when no classifier beats it, since the classifier overwrites its labels anyway."""
+    return not classifier_beats_vlm(CL.load(cache_root / "models" / MODEL_NAME))
+
+
 def _labelled_keys(data_dir: Path) -> list[str]:
     return sorted(p.stem for p in (data_dir / "labels").glob("*.json"))
 
@@ -128,11 +144,13 @@ def apply_classifier(all_hits: dict[int, list[Hit]], tracks, cache_root: Path, l
     bundle = CL.load(cache_root / "models" / MODEL_NAME)
     if bundle is None:
         return all_hits
-    use = bundle["cv_accuracy"] >= (bundle.get("vlm_accuracy") or 0)
+    use = classifier_beats_vlm(bundle)
+    vlm = bundle.get("vlm_accuracy")
+    vlm = 0.0 if vlm is None or vlm != vlm else vlm
     if info is not None:
-        info.update(n=bundle["n"], cv=bundle["cv_accuracy"], vlm=bundle.get("vlm_accuracy") or 0.0, used=use)
+        info.update(n=bundle["n"], cv=bundle["cv_accuracy"], vlm=vlm, used=use)
     log(f"  classifieur de coups : {bundle['n']} exemples, précision validée {100 * bundle['cv_accuracy']:.0f} % "
-        f"(VLM {100 * (bundle.get('vlm_accuracy') or 0):.0f} %) → {'utilisé' if use else 'non utilisé'}")
+        f"(VLM {100 * vlm:.0f} %) → {'utilisé' if use else 'non utilisé'}")
     out = {}
     for sid, hs in all_hits.items():
         kept = []

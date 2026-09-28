@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .players import ShotTracks
+from .players import POSE_FPS, ShotTracks
 from .strokes import Hit
 
 FEATURE_VERSION = 1
@@ -176,7 +176,7 @@ def train(samples: list[Sample], k: int = 5) -> tuple[dict, dict]:
     model, mu, sd = _fit(X, y, len(classes))
     bundle = {"model": model, "mu": mu, "sd": sd, "classes": classes, "feature_version": FEATURE_VERSION,
               "cv_accuracy": report["accuracy"]["classifieur_cv"][0], "vlm_accuracy": report["accuracy"]["vlm"][0],
-              "n": len(used)}
+              "n": len(used), "pose_fps": POSE_FPS}  # features are per frame: tracks must be sampled at this rate
     return bundle, report
 
 

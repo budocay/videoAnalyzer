@@ -156,6 +156,10 @@ Learning loop (padel/dataset.py, classifier.py, learn.py; CLI `video-analyzer pa
   forehand/backhand from pose ≈ chance on both sides (YOLO L/R or the hip-axis rule is unreliable).
   Classifier (MLP on canonicalised pose sequence) 50 % CV and rejects ~25 % false hits → pipeline uses it
   automatically when cv_accuracy ≥ VLM accuracy (model at <cache>/models/stroke_clf.pt).
+- Per-hit VLM check is automatic (`learn.use_vlm_for_strokes`): skipped when the classifier beats the VLM, since
+  it overwrites the VLM label anyway (~5 s/hit, ~7.2k tokens on Ollama → >1 h for a 29-min match). `--vlm-strokes`
+  forces it. NaN vlm_accuracy (training hits without VLM) counts as 0. Annotation order = pose vs VLM/classifier
+  disagreements, least confident classifier first. Bundle stores pose_fps.
 - Hits keep stroke_pose / stroke_vlm / stroke_clf separately for evaluation; `reconcile` re-applies pose rules
   to cached hits. Feature canonicalisation is unit-tested (front view == mirrored back view).
 

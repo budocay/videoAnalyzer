@@ -248,7 +248,9 @@ forts » fonctionnent aussi, car les plans parasites sont retirés automatiqueme
 
 | Option | Rôle |
 |---|---|
-| `--no-vlm-strokes` | types de coups sans vérification par le modèle de vision : beaucoup plus rapide, un peu moins fiable |
+| *(par défaut)* | types de coups par le classifieur entraîné s'il est plus fiable que le modèle de vision (c'est le cas aujourd'hui), sinon vérification de chaque frappe par le modèle de vision |
+| `--vlm-strokes` | force la vérification de chaque frappe par le modèle de vision (lent : quelques secondes par frappe) |
+| `--no-vlm-strokes` | jamais de vérification par le modèle de vision |
 | `--no-summary` | pas de commentaire rédigé |
 | `--model 4b` / `9b` | taille du modèle de vision |
 | `--out DOSSIER` | où écrire les résultats |
@@ -314,7 +316,7 @@ Toujours commencer par `./va.sh doctor` (ou `va.cmd doctor`), qui indique ce qui
 | `ffmpeg introuvable` | Relancer l'installateur. Sous Windows, fermer et rouvrir le terminal pour que le PATH soit à jour. |
 | `Ollama injoignable sur http://127.0.0.1:11434` | Lancer l'application Ollama (Windows/macOS) ou `ollama serve` (Linux), puis réessayer. |
 | `modèle Ollama absent : lance ollama pull …` | Exécuter la commande indiquée, par exemple `ollama pull qwen3-vl:4b-instruct`. |
-| Analyse très lente sur PC | Normal sans carte NVIDIA. Utiliser `--model 4b` et, pour le padel, `--no-vlm-strokes`. |
+| Analyse très lente sur PC | Normal sans carte NVIDIA. Utiliser `--model 4b`. |
 | Carte NVIDIA présente mais `doctor` indique « CPU » | Mettre à jour le pilote NVIDIA, puis relancer l'installateur, qui réinstallera PyTorch CUDA. |
 | Carte AMD : `doctor` indique « accélération CPU » | Windows : mettre à jour le pilote Adrenalin (≥ 26.2.2) et vérifier Windows 11, puis relancer l'installateur. Linux : `sudo usermod -aG render,video $USER`, se reconnecter. |
 | Carte AMD : Python 3.12 absent | `install.cmd` l'installe tout seul (winget). S'il échoue : `winget install Python.Python.3.12`. |

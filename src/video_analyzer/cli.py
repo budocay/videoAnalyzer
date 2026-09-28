@@ -34,8 +34,12 @@ def parse_padel_args(argv) -> argparse.Namespace:
                                  description="Analyse complète d'un match de padel (100 % local)")
     ap.add_argument("video", type=Path)
     ap.add_argument("--model", default=None, help="VLM (tri des plans, score, coups, résumé) ; défaut selon la machine")
-    ap.add_argument("--no-vlm-strokes", action="store_true",
-                    help="types de coups par la pose seule (plus rapide, moins fiable)")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--vlm-strokes", dest="vlm_strokes", action="store_const", const=True, default=None,
+                   help="force la vérification de chaque frappe par le VLM (lent, ~5 s par frappe). Par défaut, "
+                        "seulement si aucun classifieur entraîné ne fait mieux")
+    g.add_argument("--no-vlm-strokes", dest="vlm_strokes", action="store_const", const=False,
+                   help="jamais de vérification des frappes par le VLM")
     ap.add_argument("--no-summary", action="store_true", help="pas de résumé rédigé")
     ap.add_argument("--out", type=Path, default=None, help="dossier de sortie (défaut : celui de la vidéo)")
     ap.add_argument("--cache-dir", type=Path, default=C.DEFAULT_CACHE_DIR)
@@ -68,7 +72,7 @@ def main_padel(argv) -> int:
     from .padel.pipeline import run as run_padel
 
     run_padel(info, args.out or args.video.parent, args.cache_dir, vlm, model_dir,
-              refine_strokes=not args.no_vlm_strokes, summary=not args.no_summary)
+              refine_strokes=args.vlm_strokes, summary=not args.no_summary)
     return 0
 
 
@@ -103,6 +107,11 @@ def main_padel_tools(argv) -> int:
         info = probe(args.video)
         key = video_key(info.path)
         hits, tracks = DS.load_hits(key, cache)
+        bundle = L.CL.load(cache / "models" / L.MODEL_NAME)
+        if bundle:  # classifier predictions drive the active-learning order
+            for h in hits:
+                if r := L.CL.predict(bundle, h, tracks[h.shot_id]):
+                    h.stroke_clf, h.clf_prob = r
         # hits labelled by a human are skipped; bootstrap labels (annotator "claude") are offered again
         already = {k for k, v in DS.load_labels(key).items() if v["annotator"] == "user"}
         pick = DS.select_for_annotation(hits, args.n, already)

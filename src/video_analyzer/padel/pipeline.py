@@ -140,7 +140,8 @@ def _score_text(d: dict | None) -> str:
 
 
 def run(info: VideoInfo, out_dir: Path, cache_root: Path, vlm_repo: str, model_dir: Path,
-        refine_strokes: bool = True, summary: bool = True) -> tuple[Path, Path]:
+        refine_strokes: bool | None = None, summary: bool = True) -> tuple[Path, Path]:
+    """refine_strokes: None = automatic (per-hit VLM check only when no trained classifier beats it)."""
     t_all = time.perf_counter()
     cache = cache_root / video_key(info.path) / "padel"
     cache.mkdir(parents=True, exist_ok=True)
@@ -191,6 +192,10 @@ def run(info: VideoInfo, out_dir: Path, cache_root: Path, vlm_repo: str, model_d
     tracks = {t.shot_id: t for t in track_rallies(info, court, shots, cache, model_dir, log)}
 
     log("• 5/6 Frappes")
+    if refine_strokes is None:
+        refine_strokes = L.use_vlm_for_strokes(cache_root)
+        log("  types de coups : " + ("vérification par le VLM (pas de classifieur meilleur)" if refine_strokes else
+                                     "classifieur entraîné (meilleur que le VLM ; --vlm-strokes pour forcer le VLM)"))
     hits_path = cache / ("hits_vlm.json" if refine_strokes else "hits.json")
     vlm = None
     if hits_path.exists():

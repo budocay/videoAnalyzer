@@ -165,7 +165,7 @@ Le rapport doit se régénérer en une minute environ, tout venant du cache.
 | Vérifier l'installation | `va.cmd doctor` |
 | Décrire une vidéo | `va.cmd video.mp4 --lang fr --summary` |
 | Analyser un match | `va.cmd padel match.mp4` |
-| Analyse plus rapide (coups sans le modèle de vision) | `va.cmd padel match.mp4 --no-vlm-strokes` |
+| Forcer la vérification des coups par le modèle de vision (lent) | `va.cmd padel match.mp4 --vlm-strokes` |
 | Page d'annotation | `va.cmd padel annotate match.mp4 -n 200` |
 | Importer des annotations | `va.cmd padel import-labels %USERPROFILE%\Downloads\labels_<nom>.json` |
 | Réentraîner le classifieur | `va.cmd padel train` |

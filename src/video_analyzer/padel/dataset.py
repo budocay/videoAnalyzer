@@ -63,12 +63,16 @@ def load_hits(key: str, cache_root: Path) -> tuple[list[Hit], dict[int, ShotTrac
 
 
 def select_for_annotation(hits: list[Hit], n: int, already: set[str], seed: int = 0) -> list[Hit]:
-    """Active-learning order: pose/VLM disagreements first, then round-robin over predicted classes
-    so rare strokes get labelled too, then the rest at random."""
+    """Active-learning order: disagreements of the pose rules with the VLM or the classifier first (least
+    confident classifier first), then round-robin over predicted classes so rare strokes get labelled too."""
     rng = random.Random(seed)
     todo = [h for h in hits if h.key not in already]
     rng.shuffle(todo)
-    disagree = [h for h in todo if h.stroke_vlm and h.stroke_pose and h.stroke_vlm != h.stroke_pose]
+    from .classifier import target  # bandeja / víbora are one class for the classifier
+
+    disagree = [h for h in todo if h.stroke_pose and
+                any(o and target(o) != target(h.stroke_pose) for o in (h.stroke_vlm, h.stroke_clf))]
+    disagree.sort(key=lambda h: h.clf_prob if h.stroke_clf else 1.0)
     rest = [h for h in todo if h not in disagree]
     by_class: dict[str, list[Hit]] = {}
     for h in rest:
