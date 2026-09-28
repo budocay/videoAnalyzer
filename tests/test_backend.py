@@ -53,7 +53,10 @@ def test_ollama_vlm_request_and_answer(server, tmp_path):
     assert a.text == "Un carré rouge." and a.prompt_tokens == 12 and a.generation_tokens == 4
     path, p = FakeOllama.requests[-1]
     assert path == "/api/chat" and p["stream"] is False
-    assert p["options"] == {"temperature": 0, "num_predict": 50}
+    assert p["options"] == {"temperature": 0, "num_predict": 50, "num_ctx": vlm.num_ctx}
+    # same context on load and on every call, or Ollama reloads the model; default 4096 is too small
+    load = next(q for pth, q in FakeOllama.requests if pth == "/api/generate")
+    assert load["options"]["num_ctx"] == vlm.num_ctx >= 8192
     assert p["messages"][0]["images"] == [base64.b64encode(b"\xff\xd8fake").decode()]
     vlm.close()
     assert FakeOllama.requests[-1][1]["keep_alive"] == 0

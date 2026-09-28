@@ -81,12 +81,17 @@ class OllamaVLM:
         self.repo = model
         self.url = (url or backend.OLLAMA_URL).rstrip("/")
         self.timeout = timeout
+        # Ollama loads models with a 4096-token context by default; Ollama's qwen3-vl costs ~1000 tokens per
+        # 336 px crop, so a padel stroke check (4 examples + 3 crops) is ~7200 tokens → HTTP 400. The same
+        # num_ctx must be sent on every call, otherwise Ollama reloads the model.
+        self.num_ctx = 16384 if backend.gpu().vram_gb >= 12 else 8192
         t = time.perf_counter()
         tags = self._call("/api/tags", None, method="GET")
         names = {m.get("name") for m in tags.get("models", [])} | {m.get("model") for m in tags.get("models", [])}
         if model not in names:
             raise RuntimeError(f"modèle Ollama absent : lance `ollama pull {model}`")
-        self._call("/api/generate", {"model": model, "prompt": "", "keep_alive": "30m"})  # load into memory
+        self._call("/api/generate", {"model": model, "prompt": "", "keep_alive": "30m",
+                                     "options": {"num_ctx": self.num_ctx}})  # load into memory
         self.load_seconds = time.perf_counter() - t
 
     def _call(self, path: str, payload: dict | None, method: str = "POST") -> dict:
@@ -100,6 +105,9 @@ class OllamaVLM:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 return json.loads(r.read().decode("utf-8") or "{}")
+        except urllib.error.HTTPError as e:  # Ollama answered: show its own reason (context size, bad image…)
+            raise RuntimeError(f"Ollama a refusé la requête {path} (HTTP {e.code}) : "
+                               f"{e.read().decode('utf-8', 'replace')[:500]}") from e
         except urllib.error.URLError as e:
             raise RuntimeError(f"Ollama injoignable sur {self.url} ({e}). Lance l'application Ollama "
                                "ou `ollama serve`.") from e
@@ -114,7 +122,8 @@ class OllamaVLM:
             msg["images"] = [base64.b64encode(Path(p).read_bytes()).decode() for p in images]
         t = time.perf_counter()
         r = self._call("/api/chat", {"model": self.repo, "messages": [msg], "stream": False,
-                                     "options": {"temperature": 0, "num_predict": max_tokens}})
+                                     "options": {"temperature": 0, "num_predict": max_tokens,
+                                                 "num_ctx": self.num_ctx}})
         return Answer(
             text=clean(r.get("message", {}).get("content", "")),
             seconds=time.perf_counter() - t,
