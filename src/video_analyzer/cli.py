@@ -190,12 +190,40 @@ def doctor() -> int:
     return 0 if ok else 1
 
 
-def main(argv=None) -> int:
-    for stream in (sys.stdout, sys.stderr):  # Windows consoles default to cp1252
+_ASCII = {"▶": ">", "•": "-", "✔": "OK", "✗": "x", "⚠": "!", "—": "-", "–": "-", "…": "...", "→": "->",
+          "·": "-", "’": "'", "«": '"', "»": '"'}
+
+
+def _ascii_fallback(e: UnicodeEncodeError):
+    return "".join(_ASCII.get(c, "?") for c in e.object[e.start:e.end]), e.end
+
+
+def _setup_streams() -> None:
+    """A real console gets UTF-8 (WriteConsoleW). A pipe on Windows (`| Out-Host`, `| Tee-Object`) is decoded by
+    PowerShell/cmd with the console code page (often 850 or 1252): write in that one, ASCII fallbacks for symbols."""
+    import codecs
+
+    codecs.register_error("va_ascii", _ascii_fallback)
+    piped = "utf-8"
+    if sys.platform == "win32":
+        import ctypes
+
+        cp = ctypes.windll.kernel32.GetConsoleOutputCP()  # 0 when no console is attached
+        if cp and cp != 65001:
+            try:
+                piped = codecs.lookup(f"cp{cp}").name
+            except LookupError:
+                pass
+    for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
+            tty = stream.isatty()
+            stream.reconfigure(encoding="utf-8" if tty else piped, errors="replace" if tty else "va_ascii")
         except (AttributeError, ValueError):
             pass
+
+
+def main(argv=None) -> int:
+    _setup_streams()
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "doctor":
         return doctor()
