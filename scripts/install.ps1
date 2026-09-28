@@ -21,9 +21,14 @@ if (-not (Have winget)) {
     exit 1
 }
 
-# Python >= 3.11 via the py launcher, else install 3.12
+# Python >= 3.11 via the py launcher, else install 3.12.
+# AMD Radeon RX: AMD's ROCm PyTorch for Windows only exists for Python 3.12, so 3.12 is required.
+$amd = [bool](Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -match 'Radeon.*RX|Radeon PRO' })
+$versions = if ($amd) { @("3.12") } else { @("3.13", "3.12", "3.11") }
+if ($amd) { Info "carte AMD Radeon détectée : Python 3.12 (exigé par PyTorch ROCm pour Windows)" }
 $py = $null
-foreach ($v in @("3.13", "3.12", "3.11")) {
+foreach ($v in $versions) {
     if (Have py) {
         try {
             $null = & py "-$v" -c "import sys" 2>&1

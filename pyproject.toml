@@ -22,6 +22,7 @@ dependencies = [
     "pillow>=10",
     "opencv-python>=4.9",
     "huggingface_hub>=0.30",
+    "transformers>=4.50",  # Whisper on AMD GPUs (ROCm PyTorch); already pulled by mlx-vlm on Apple Silicon
 ]
 
 [project.optional-dependencies]

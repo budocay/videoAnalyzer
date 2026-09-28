@@ -68,10 +68,10 @@ def test_resolve_vlm_per_backend(monkeypatch):
     from video_analyzer import backend
     monkeypatch.setattr(C, "default_vlm_choice", lambda: None)  # ignore a local settings.json
     monkeypatch.setattr(backend, "name", lambda: "portable")
-    monkeypatch.setattr(backend, "nvidia_vram_gb", lambda: 12.0)
+    monkeypatch.setattr(backend, "gpu_vram_gb", lambda: 12.0)
     assert C.resolve_vlm(None) == "qwen3-vl:8b-instruct"
     assert C.resolve_vlm("mlx-community/Qwen3.5-4B-MLX-8bit") == "qwen3-vl:4b-instruct"
-    monkeypatch.setattr(backend, "nvidia_vram_gb", lambda: 0.0)
+    monkeypatch.setattr(backend, "gpu_vram_gb", lambda: 0.0)
     assert C.resolve_vlm(None) == "qwen3-vl:4b-instruct"
     monkeypatch.setattr(backend, "name", lambda: "mlx")
     assert C.resolve_vlm(None) == "mlx-community/Qwen3.5-9B-MLX-8bit"
@@ -83,3 +83,31 @@ def test_install_time_choice_is_the_default(monkeypatch):
     monkeypatch.setattr(C, "default_vlm_choice", lambda: "4b")
     assert C.resolve_vlm(None) == "mlx-community/Qwen3.5-4B-MLX-8bit"
     assert C.resolve_vlm("9b") == "mlx-community/Qwen3.5-9B-MLX-8bit"  # explicit --model wins
+
+
+def test_amd_windows_vram_from_registry(monkeypatch):
+    from video_analyzer import backend
+    monkeypatch.setattr(backend, "_run", lambda cmd: "AMD Radeon RX 7900 XT|21458059264\r\n")
+    g = backend._amd_windows()
+    assert g.vendor == "amd" and g.name == "AMD Radeon RX 7900 XT" and round(g.vram_gb) == 20
+
+
+def test_whisper_engine_per_gpu(monkeypatch):
+    from video_analyzer import backend
+    monkeypatch.delenv("VIDEO_ANALYZER_WHISPER", raising=False)
+    monkeypatch.setattr(backend, "name", lambda: "portable")
+    monkeypatch.setattr(backend, "gpu", lambda: backend.GPU("amd", "RX 7900 XT", 20.0))
+    monkeypatch.setattr(backend, "torch_accel", lambda: "ROCm")
+    assert backend.whisper_engine() == "transformers"
+    monkeypatch.setattr(backend, "torch_accel", lambda: "CPU")   # ROCm PyTorch not working → CPU CT2
+    assert backend.whisper_engine() == "faster-whisper"
+    monkeypatch.setattr(backend, "gpu", lambda: backend.GPU("nvidia", "RTX 4070", 12.0))
+    assert backend.whisper_engine() == "faster-whisper"
+
+
+def test_amd_gpu_picks_the_big_model(monkeypatch):
+    from video_analyzer import backend
+    monkeypatch.setattr(C, "default_vlm_choice", lambda: None)
+    monkeypatch.setattr(backend, "name", lambda: "portable")
+    monkeypatch.setattr(backend, "gpu_vram_gb", lambda: 20.0)
+    assert C.resolve_vlm(None) == "qwen3-vl:8b-instruct"

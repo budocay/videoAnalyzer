@@ -79,7 +79,7 @@ def resolve_vlm(name: str | None = None) -> str:
     if backend.name() == "mlx":
         return VLM_PRESETS.get((name or "9b").lower(), name or DEFAULT_VLM)
     if name is None:
-        name = "9b" if backend.nvidia_vram_gb() >= 8 else "4b"
+        name = "9b" if backend.gpu_vram_gb() >= 8 else "4b"
     if name.startswith("mlx-community/"):  # MLX repo given on a non-MLX machine: closest Ollama model
         name = "4b" if "4B" in name else "9b"
     return OLLAMA_PRESETS.get(name.lower(), name)

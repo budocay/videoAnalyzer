@@ -180,3 +180,17 @@ continuous (non-montage) match to validate rally/point segmentation; stroke labe
 - README.md = user/colleague-facing (prerequisites, install per OS, doctor, usage, troubleshooting, update/uninstall).
 - docs/TECHNIQUE.md = internals, measurements, schemas. Keep measured numbers there, not in the README.
 - Latest learning numbers (user labels, 315 hits on the Paris final): classifier 44 % CV vs VLM 22 % / pose 23 %.
+
+## AMD / NVIDIA GPUs (portable backend)
+
+- `backend.gpu()` → GPU(vendor, name, vram_gb): nvidia-smi; AMD Linux via sysfs mem_info_vram_total; AMD Windows via
+  the display-class registry key HardwareInformation.qwMemorySize (WMI AdapterRAM is capped at 4 GB). Biggest VRAM wins.
+- Whisper engine (`backend.whisper_engine`): mlx | faster-whisper (NVIDIA CUDA or CPU) | transformers (AMD with ROCm
+  torch: `openai/whisper-large-v3-turbo`, pipeline dtype=fp16, return_timestamps chunks, return_language → mapped
+  "french"→"fr" via TO_LANGUAGE_CODE). Verified on this Mac via MPS (same transcript as the other engines).
+- ROCm torch is seen as device "cuda" (torch.version.hip set) → YOLO/transformers need no special code.
+- bootstrap: AMD Windows → Python 3.12 venv (install.ps1 pins 3.12 when a Radeon RX/PRO is present) + AMD wheels
+  from repo.radeon.com rocm-rel-7.2.1 (URLs checked HTTP 200); AMD Linux → pytorch.org rocm7.0 index. torch is
+  installed before `pip install -e .` so ultralytics keeps it; afterwards torch.cuda.is_available() is checked.
+- User's second machine: Ryzen 7 5800X3D + Sapphire RX 7900 XT Pulse (20 GB), Windows. Nothing GPU-related has been
+  run on real NVIDIA/AMD hardware yet: first real test = `install.cmd --demo` + `va.cmd doctor` there.

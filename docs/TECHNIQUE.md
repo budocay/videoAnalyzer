@@ -18,13 +18,30 @@ Fonctionnement interne, mesures et formats. Pour l'installation et l'usage, voir
 
 ## 1. Architecture et moteurs
 
-| | Moteur `mlx` (Mac Apple Silicon) | Moteur `portable` (Windows, Linux, Mac Intel) |
-|---|---|---|
-| Modèle de vision (VLM) | mlx-vlm, Qwen3.5 9B/4B 8 bits | Ollama local (`/api/chat`), `qwen3-vl:8b/4b-instruct` |
-| Transcription | mlx-whisper large-v3-turbo | faster-whisper large-v3-turbo (CUDA, sinon CPU int8) |
-| Détection de parole | Silero VAD (mlx-audio) | Silero VAD (ONNX, inclus dans faster-whisper) |
-| Pose (padel) | YOLO11n-pose, PyTorch MPS | YOLO11n-pose, PyTorch CUDA ou CPU |
-| Décodage des images | VideoToolbox (matériel) puis logiciel en secours | ffmpeg logiciel |
+| | Mac Apple Silicon (`mlx`) | Carte NVIDIA (`portable`) | Carte AMD (`portable`) | Sans carte (`portable`) |
+|---|---|---|---|---|
+| Modèle de vision | mlx-vlm, Qwen3.5 9B/4B | Ollama (CUDA), qwen3-vl 8B/4B | Ollama (ROCm), qwen3-vl 8B/4B | Ollama (CPU), qwen3-vl 4B |
+| Transcription | mlx-whisper | faster-whisper (CTranslate2 CUDA) | transformers + PyTorch ROCm | faster-whisper (CPU int8) |
+| Détection de parole | Silero (mlx-audio) | Silero ONNX (faster-whisper) | Silero ONNX (faster-whisper) | Silero ONNX |
+| Pose (padel) | PyTorch MPS | PyTorch CUDA | PyTorch ROCm (vu comme `cuda`) | PyTorch CPU |
+| Décodage des images | VideoToolbox puis logiciel | ffmpeg logiciel | ffmpeg logiciel | ffmpeg logiciel |
+
+Pourquoi transformers sur AMD : CTranslate2, le moteur de faster-whisper, n'a pas de version AMD. Whisper
+passe donc par PyTorch, qui a une version ROCm. PyTorch ROCm expose la carte AMD comme un périphérique `cuda`
+(`torch.version.hip` renseigné), si bien que YOLO et Whisper l'utilisent sans code spécifique.
+Le choix du moteur de transcription peut être forcé avec `VIDEO_ANALYZER_WHISPER=mlx|faster-whisper|transformers`.
+
+Détection de la carte (`backend.gpu()`) :
+- NVIDIA : `nvidia-smi`.
+- AMD sous Linux : `/sys/class/drm/card*/device/mem_info_vram_total`.
+- AMD sous Windows : clé de registre du pilote (`HardwareInformation.qwMemorySize`). La valeur `AdapterRAM`
+  de WMI plafonne à 4 Go.
+
+PyTorch ROCm vérifié à la source (septembre 2026) :
+- **Windows** : ROCm 7.2.1, paquets `repo.radeon.com/rocm/windows/rocm-rel-7.2.1/` (torch 2.9.1, torchvision 0.24.1,
+  plus `rocm_sdk_*`). Windows 11, Python 3.12, pilote Adrenalin 26.2.2 minimum. La liste officielle cite la
+  RX 7900 XTX (gfx1100), pas explicitement la XT, qui est la même puce.
+- **Linux** : `https://download.pytorch.org/whl/rocm7.0` (torch 2.10).
 
 Le moteur est choisi automatiquement (`src/video_analyzer/backend.py`). On peut forcer le choix avec
 `VIDEO_ANALYZER_BACKEND=mlx|portable`. Le modèle de vision par défaut vient de `--model`, sinon de

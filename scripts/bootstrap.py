@@ -4,7 +4,7 @@
 Called by install.sh (macOS / Linux) and install.cmd / scripts/install.ps1 (Windows) once Python,
 ffmpeg and (outside Apple Silicon) Ollama are present. Steps:
   1. .venv in the project folder (reused if healthy)
-  2. PyTorch build matching the machine (CUDA on NVIDIA, CPU otherwise), then `pip install -e .[dev]`
+  2. PyTorch build matching the machine (CUDA on NVIDIA, ROCm on AMD, CPU otherwise), then `pip install -e .[dev]`
   3. models: MLX repos on Apple Silicon, or `ollama pull` + faster-whisper elsewhere; YOLO pose weights
   4. `video-analyzer doctor` + unit tests
   5. --demo: generates a short synthetic video and analyses it end to end
@@ -40,52 +40,113 @@ def venv_bin(name: str) -> Path:
     return VENV / ("Scripts" if WIN else "bin") / (name + (".exe" if WIN else ""))
 
 
-def nvidia_vram_gb() -> float:
-    if not shutil.which("nvidia-smi"):
-        return 0.0
+# AMD's PyTorch for Windows (ROCm 7.2.1, Windows 11, Python 3.12, Adrenalin driver >= 26.2.2).
+# URLs from rocm.docs.amd.com (install PyTorch on Radeon, Windows), checked to exist on repo.radeon.com.
+AMD_WIN = "https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/"
+AMD_WIN_ROCM = [AMD_WIN + f for f in ("rocm_sdk_core-7.2.1-py3-none-win_amd64.whl",
+                                      "rocm_sdk_devel-7.2.1-py3-none-win_amd64.whl",
+                                      "rocm_sdk_libraries_custom-7.2.1-py3-none-win_amd64.whl",
+                                      "rocm-7.2.1.tar.gz")]
+AMD_WIN_TORCH = [AMD_WIN + f for f in ("torch-2.9.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl",
+                                       "torchvision-0.24.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl")]
+AMD_LINUX_INDEX = "https://download.pytorch.org/whl/rocm7.0"
+
+
+def _out(cmd: list) -> str:
     try:
-        out = subprocess.run(["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
-                             capture_output=True, text=True, timeout=10).stdout
-        return float(out.splitlines()[0]) / 1024
-    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
-        return 0.0
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=15).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
 
 
-def ensure_venv() -> Path:
+def detect_gpu() -> tuple[str, str, float]:
+    """(vendor, name, VRAM in GB) of the most capable discrete GPU; ("", "", 0) if none.
+    Same logic as video_analyzer.backend.gpu(), duplicated because the package is not installed yet."""
+    if shutil.which("nvidia-smi"):
+        try:
+            name, mem = _out(["nvidia-smi", "--query-gpu=name,memory.total",
+                              "--format=csv,noheader,nounits"]).splitlines()[0].rsplit(",", 1)
+            return "nvidia", name.strip(), float(mem) / 1024
+        except (ValueError, IndexError):
+            pass
+    best = ("", "", 0.0)
+    if sys.platform.startswith("linux"):
+        for dev in Path("/sys/class/drm").glob("card[0-9]*/device"):
+            try:
+                if (dev / "vendor").read_text().strip() == "0x1002":
+                    vram = int((dev / "mem_info_vram_total").read_text()) / 2**30
+                    if vram > best[2]:
+                        best = ("amd", "AMD Radeon", vram)
+            except (OSError, ValueError):
+                continue
+    elif WIN:
+        ps = ("Get-ItemProperty -Path 'HKLM:\\SYSTEM\\ControlSet001\\Control\\Class\\"
+              "{4d36e968-e325-11ce-bfc1-08002be10318}\\0*' -ErrorAction SilentlyContinue | "
+              "Where-Object { $_.DriverDesc -match 'Radeon' } | "
+              "ForEach-Object { \"$($_.DriverDesc)|$($_.'HardwareInformation.qwMemorySize')\" }")
+        for line in _out(["powershell", "-NoProfile", "-Command", ps]).splitlines():
+            name, _, mem = line.strip().partition("|")
+            try:
+                vram = int(mem) / 2**30
+            except ValueError:
+                vram = 0.0
+            if name and (vram > best[2] or not best[0]):
+                best = ("amd", name, vram)
+    return best
+
+
+def ensure_venv(need_312: bool = False) -> Path:
+    """Reuse .venv if its Python is recent enough (exactly 3.12 when AMD's Windows wheels require it)."""
     py = venv_bin("python")
+    check = "sys.version_info[:2] == (3, 12)" if need_312 else "sys.version_info >= (3, 11)"
     if py.exists():
-        ok = subprocess.run([str(py), "-c", "import sys; sys.exit(sys.version_info < (3, 11))"]).returncode == 0
-        if ok:
+        if subprocess.run([str(py), "-c", f"import sys; sys.exit(0 if {check} else 1)"]).returncode == 0:
             print(f"   environnement existant réutilisé : {VENV}")
             return py
-        say("environnement .venv trop ancien : recréation")
+        say("environnement .venv incompatible (version de Python) : recréation")
         shutil.rmtree(VENV)
     say(f"création de l'environnement Python ({sys.executable}, {platform.python_version()})")
     run([sys.executable, "-m", "venv", VENV])
     return py
 
 
-def install_packages(py: Path, vram: float) -> None:
+def install_packages(py: Path, gpu: tuple[str, str, float]) -> None:
+    vendor, gpu_name, vram = gpu
     pip = [py, "-m", "pip"]
     run(pip + ["install", "--upgrade", "pip", "wheel", "setuptools"])
+    # torch goes in first so that ultralytics (installed with the project) keeps this build.
     if not APPLE_SILICON and sys.platform != "darwin":
-        # Windows' default PyPI torch is CPU-only; Linux's bundles CUDA (~2.5 GB) even without a GPU.
-        if vram:
-            if WIN:
-                say(f"GPU NVIDIA ({vram:.0f} Go) : PyTorch avec CUDA")
+        if vendor == "nvidia":
+            if WIN:  # Windows' default PyPI torch is CPU-only; Linux's already bundles CUDA
+                say(f"{gpu_name} ({vram:.0f} Go) : PyTorch CUDA")
                 run(pip + ["install", "torch", "torchvision", "--index-url", "https://download.pytorch.org/whl/cu128"])
+        elif vendor == "amd" and WIN:
+            if sys.version_info[:2] == (3, 12):
+                say(f"{gpu_name} ({vram:.0f} Go) : PyTorch ROCm 7.2.1 pour Windows (paquets AMD, ~2 Go)")
+                run(pip + ["install", "--no-cache-dir"] + AMD_WIN_ROCM)
+                run(pip + ["install", "--no-cache-dir"] + AMD_WIN_TORCH)
+            else:
+                say("carte AMD détectée mais Python n'est pas en 3.12 (exigé par AMD) : PyTorch CPU")
+                run(pip + ["install", "torch", "torchvision", "--index-url", "https://download.pytorch.org/whl/cpu"])
+        elif vendor == "amd":
+            say(f"carte AMD ({vram:.0f} Go) : PyTorch ROCm 7.0 (Linux)")
+            run(pip + ["install", "torch", "torchvision", "--index-url", AMD_LINUX_INDEX])
         else:
-            say("pas de GPU NVIDIA : PyTorch CPU")
+            say("pas de carte NVIDIA ni AMD détectée : PyTorch CPU")
             run(pip + ["install", "torch", "torchvision", "--index-url", "https://download.pytorch.org/whl/cpu"])
     say("installation de video-analyzer et de ses dépendances")
     run(pip + ["install", "-e", f"{ROOT}[dev]"])
-    if vram and sys.platform != "darwin":
-        # A CPU-only torch already in the venv satisfies pip: check CUDA really works, else force the CUDA build.
-        cuda = subprocess.run([str(py), "-c", "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"])
-        if cuda.returncode != 0:
+    if vendor in ("nvidia", "amd") and sys.platform != "darwin":
+        # A torch already in the venv satisfies pip even if it is the wrong build: check the GPU is usable.
+        ok = subprocess.run([str(py), "-c", "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"])
+        if ok.returncode != 0 and vendor == "nvidia":
             say("PyTorch ne voit pas le GPU : réinstallation de la version CUDA")
             index = ["--index-url", "https://download.pytorch.org/whl/cu128"] if WIN else []
             run(pip + ["install", "--force-reinstall", "torch", "torchvision"] + index)
+        elif ok.returncode != 0:
+            print("   ⚠ PyTorch ne voit pas la carte AMD : la pose et la transcription tourneront sur le processeur.\n"
+                  "     Windows : pilote AMD Adrenalin 26.2.2 ou plus récent et Windows 11 requis.\n"
+                  "     Linux : utilisateur dans les groupes 'render' et 'video' (sudo usermod -aG render,video $USER).")
 
 
 def ollama_up(url: str = "http://127.0.0.1:11434") -> bool:
@@ -114,7 +175,7 @@ def ensure_ollama() -> bool:
     return False
 
 
-def download_models(py: Path, model: str | None, vram: float) -> None:
+def download_models(py: Path, model: str | None, vram: float, vendor: str = "") -> None:
     cache = Path.home() / ".cache" / "video-analyzer" / "models"
     cache.mkdir(parents=True, exist_ok=True)
     if APPLE_SILICON:
@@ -130,9 +191,10 @@ def download_models(py: Path, model: str | None, vram: float) -> None:
         if ensure_ollama():
             say(f"modèle VLM Ollama : {tag} ({'6.1' if '8b' in tag else '3.3'} Go)")
             run([shutil.which("ollama"), "pull", tag])
-        say("modèle de transcription faster-whisper large-v3-turbo (≈ 1.6 Go)")
-        run([py, "-c", "from huggingface_hub import snapshot_download as d; "
-                       "d('mobiuslabsgmbh/faster-whisper-large-v3-turbo')"])
+        # AMD: Whisper runs through transformers + ROCm PyTorch (CTranslate2 has no AMD backend)
+        repo = "openai/whisper-large-v3-turbo" if vendor == "amd" else "mobiuslabsgmbh/faster-whisper-large-v3-turbo"
+        say(f"modèle de transcription {repo} (≈ 1.6 Go)")
+        run([py, "-c", f"from huggingface_hub import snapshot_download as d; d('{repo}')"])
     shipped = ROOT / "models"  # trained stroke classifier shipped by scripts/package.py
     for name in ("stroke_clf.pt", "stroke_clf.json"):
         if (shipped / name).exists() and not (cache / name).exists():
@@ -170,18 +232,20 @@ def main() -> int:
         if not shutil.which(tool):
             sys.exit(f"{tool} introuvable dans le PATH : relance l'installateur de ton système")
 
-    vram = nvidia_vram_gb()
-    engine = "MLX (Apple Silicon)" if APPLE_SILICON else ("Ollama + CUDA" if vram else "Ollama + CPU")
+    gpu = ("", "", 0.0) if APPLE_SILICON else detect_gpu()
+    vendor, gpu_name, vram = gpu
+    engine = ("MLX (Apple Silicon)" if APPLE_SILICON else
+              {"nvidia": "Ollama + CUDA", "amd": "Ollama + ROCm"}.get(vendor, "Ollama + CPU"))
     print(f"video-analyzer · {platform.system()} {platform.machine()} · Python {platform.python_version()} · "
-          f"moteur {engine}" + (f" · GPU {vram:.0f} Go" if vram else ""))
+          f"moteur {engine}" + (f" · {gpu_name} {vram:.0f} Go" if vendor else ""))
 
     if args.model:  # remembered for every later run (read by video_analyzer.config)
         import json
         (ROOT / "settings.json").write_text(json.dumps({"vlm": args.model}, indent=1) + "\n", encoding="utf-8")
-    py = ensure_venv()
-    install_packages(py, vram)
+    py = ensure_venv(need_312=WIN and vendor == "amd")
+    install_packages(py, gpu)
     if not args.skip_models:
-        download_models(py, args.model, vram)
+        download_models(py, args.model, vram, vendor)
 
     cli = venv_bin("video-analyzer")
     env = {**os.environ, "PYTHONUTF8": "1"}

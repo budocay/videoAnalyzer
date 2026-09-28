@@ -33,10 +33,31 @@ Fonctionne sur **Mac Apple Silicon, Windows et Linux**. Un script installe tout.
 | Machine | Moteur utilisé | Vitesse indicative |
 |---|---|---|
 | **Mac Apple Silicon** (M1 à M4), 16 Go de mémoire ou plus | MLX, sur le GPU Apple | description : ~2 s de calcul par seconde de vidéo · padel : ~50 min pour 15 min de vidéo |
-| **PC avec carte NVIDIA**, 8 Go de mémoire vidéo ou plus | Ollama + faster-whisper, sur le GPU | non mesurée, du même ordre qu'un Mac |
-| **PC sans carte NVIDIA**, Mac Intel | Ollama + faster-whisper, sur le processeur | lent : plusieurs heures pour un match de padel de 15 min |
+| **PC avec carte NVIDIA**, 8 Go de mémoire vidéo ou plus | Ollama + faster-whisper + PyTorch CUDA, sur le GPU | non mesurée, du même ordre qu'un Mac |
+| **PC avec carte AMD Radeon** (RX 7000/9000) | Ollama + Whisper (transformers) + PyTorch ROCm, sur le GPU | non mesurée |
+| **PC sans carte dédiée**, Mac Intel | Ollama + faster-whisper, sur le processeur | lent : plusieurs heures pour un match de padel de 15 min |
 
 Le script détecte la machine et choisit le moteur tout seul.
+
+### Cartes AMD Radeon
+
+Toute la chaîne peut tourner sur une Radeon :
+- le modèle de vision, via Ollama ;
+- la pose et la transcription, via PyTorch ROCm.
+
+L'installateur détecte la carte et installe ce qu'il faut. Conditions fixées par AMD :
+
+| | Windows | Linux |
+|---|---|---|
+| Système | **Windows 11** | Ubuntu, Debian, RHEL… récents |
+| Pilote | **AMD Adrenalin 26.2.2 ou plus récent** | pilote `amdgpu` du noyau |
+| PyTorch | ROCm 7.2.1, paquets AMD (`repo.radeon.com`) | ROCm 7.0 (index pytorch.org) |
+| Python | **3.12 obligatoire** (installé automatiquement) | 3.11 ou plus |
+| Cartes | RX 7000 (dont 7900 XTX/XT/GRE, 7800 XT, 7700 XT) et RX 9000 | idem |
+
+AMD précise que sous Windows, « toute la pile ROCm n'est pas encore prise en charge ». Si PyTorch ne voit pas la
+carte, `doctor` le signale : le modèle de vision reste alors sur la carte (Ollama), mais la pose et la
+transcription passent sur le processeur.
 
 ### Espace disque
 
@@ -44,6 +65,7 @@ Le script détecte la machine et choisit le moteur tout seul.
 |---|---|---|---|
 | Mac Apple Silicon | ~12 Go (9B) ou ~7 Go (4B) | ~2 Go | **~14 Go** |
 | PC avec GPU NVIDIA | ~8 Go | ~5 Go (PyTorch CUDA) | **~13 Go** |
+| PC avec GPU AMD | ~8 Go | ~6 Go (PyTorch ROCm) | **~14 Go** |
 | PC sans GPU | ~5 Go | ~2 Go | **~7 Go** |
 
 Il faut aussi prévoir la place des vidéos et d'un cache d'analyse de quelques centaines de Mo par vidéo.
@@ -130,7 +152,7 @@ Modèle de vision choisi par défaut :
 | Machine | Modèle | Taille |
 |---|---|---|
 | Mac Apple Silicon | Qwen3.5-9B (MLX, 8 bits) | 10.5 Go |
-| PC avec GPU NVIDIA ≥ 8 Go | `qwen3-vl:8b-instruct` (Ollama) | 6.1 Go |
+| PC avec GPU NVIDIA ou AMD ≥ 8 Go | `qwen3-vl:8b-instruct` (Ollama) | 6.1 Go |
 | Autres machines | `qwen3-vl:4b-instruct` (Ollama) | 3.3 Go |
 
 Utiliser `--model 4b` sur un Mac de 16 Go ou pour aller plus vite. Le 4B est environ deux fois plus rapide
@@ -294,6 +316,8 @@ Toujours commencer par `./va.sh doctor` (ou `va.cmd doctor`), qui indique ce qui
 | `modèle Ollama absent : lance ollama pull …` | Exécuter la commande indiquée, par exemple `ollama pull qwen3-vl:4b-instruct`. |
 | Analyse très lente sur PC | Normal sans carte NVIDIA. Utiliser `--model 4b` et, pour le padel, `--no-vlm-strokes`. |
 | Carte NVIDIA présente mais `doctor` indique « CPU » | Mettre à jour le pilote NVIDIA, puis relancer l'installateur, qui réinstallera PyTorch CUDA. |
+| Carte AMD : `doctor` indique « accélération CPU » | Windows : mettre à jour le pilote Adrenalin (≥ 26.2.2) et vérifier Windows 11, puis relancer l'installateur. Linux : `sudo usermod -aG render,video $USER`, se reconnecter. |
+| Carte AMD : Python 3.12 absent | `install.cmd` l'installe tout seul (winget). S'il échoue : `winget install Python.Python.3.12`. |
 | Transcription lente malgré une carte NVIDIA | faster-whisper bascule sur le processeur quand les bibliothèques CUDA (cuBLAS/cuDNN) manquent ; le résultat reste correct. |
 | Windows : « l'exécution de scripts est désactivée » | Passer par `install.cmd` et non `install.ps1` : il contourne cette restriction pour la seule installation. |
 | Téléchargement de modèle interrompu | Relancer l'installateur : les téléchargements reprennent. |
@@ -343,8 +367,9 @@ annotations et le classifieur de coups entraîné, sans l'environnement Python, 
   de vision seul. Ce taux progresse avec les annotations (voir 4.3).
 - **Joueurs** : identifiés par équipe et par côté, pas par leur nom.
 - **Montages de temps forts** : le gagnant d'un point n'est connu que si le score affiché avance d'exactement un point.
-- **Tests** : les installateurs Windows et Linux sont écrits mais n'ont pas encore été testés sur une vraie
-  machine de ces systèmes. L'installation Mac et le moteur Ollama/faster-whisper, eux, ont été vérifiés de bout en bout.
+- **Tests** : les installateurs Windows et Linux et la prise en charge des cartes AMD et NVIDIA sont écrits mais
+  n'ont pas encore été testés sur une vraie machine de ces systèmes. L'installation Mac, le moteur Ollama/faster-whisper
+  et la transcription via transformers ont, eux, été vérifiés de bout en bout.
 
 ---
 

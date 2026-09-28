@@ -69,6 +69,8 @@ def whisper_repo(repo: str) -> str:
 
     if backend.name() == "mlx":
         return repo
+    if backend.whisper_engine() == "transformers":
+        return TRANSFORMERS_WHISPER
     from .config import PORTABLE_WHISPER
 
     return {"large-v3-turbo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo"}.get(
@@ -100,10 +102,49 @@ def _vad(wav: Path) -> list[tuple[float, float]]:
             for r in get_speech_timestamps(audio, VadOptions())]
 
 
+TRANSFORMERS_WHISPER = "openai/whisper-large-v3-turbo"  # 1.62 GB, same weights as the MLX / CT2 conversions
+
+
+def _whisper_transformers(wav: Path, lang: str | None) -> tuple[list[dict], str | None]:
+    """Whisper through transformers + PyTorch: used on AMD GPUs (ROCm), which CTranslate2 cannot drive.
+    Checked against transformers 5.17: pipeline(..., dtype=, device=), return_timestamps gives "chunks"
+    [{"text", "timestamp": (start, end)}], return_language adds "language" to each chunk."""
+    import torch
+    from faster_whisper.audio import decode_audio
+    from transformers import pipeline
+
+    from . import backend
+
+    device = backend.torch_device()
+    asr = pipeline("automatic-speech-recognition", model=TRANSFORMERS_WHISPER, device=device,
+                   dtype=torch.float16 if device == "cuda" else torch.float32)
+    kwargs = {"task": "transcribe", **({"language": lang} if lang else {})}
+    out = asr({"raw": decode_audio(str(wav), sampling_rate=16000), "sampling_rate": 16000},
+              return_timestamps=True, chunk_length_s=30, batch_size=8, generate_kwargs=kwargs,
+              return_language=True)
+    segs, language = [], lang
+    for c in out.get("chunks", []):
+        start, end = c["timestamp"]
+        if start is None:
+            continue
+        segs.append({"start": float(start), "end": float(end if end is not None else start), "text": c["text"]})
+        language = language or c.get("language")
+    if language and len(language) > 3:  # the pipeline reports "french"; other engines report "fr"
+        from transformers.models.whisper.tokenization_whisper import TO_LANGUAGE_CODE
+
+        language = TO_LANGUAGE_CODE.get(language.lower(), language)
+    del asr
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    return segs, language
+
+
 def _whisper(wav: Path, repo: str, lang: str | None) -> tuple[list[dict], str | None]:
     """Raw segments [{start, end, text}] and detected language."""
     from . import backend
 
+    if backend.whisper_engine() == "transformers":
+        return _whisper_transformers(wav, lang)
     if backend.name() == "mlx":
         import mlx_whisper
         from mlx_whisper.transcribe import ModelHolder

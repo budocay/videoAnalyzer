@@ -151,11 +151,24 @@ def doctor() -> int:
         path = shutil.which(tool)
         ver = subprocess.run([tool, "-version"], capture_output=True, text=True).stdout.split("\n")[0] if path else ""
         line(bool(path), tool, ver or "introuvable (voir README, installation)")
+    g = backend.gpu()
+    if backend.name() != "mlx":
+        line(bool(g.vendor), "carte graphique",
+             f"{g.name} · {g.vram_gb:.0f} Go" if g.vendor else "aucune carte NVIDIA/AMD : tout sur le processeur",
+             blocking=False)
     try:
-        dev = backend.torch_device()
-        line(True, "pose (torch)", f"périphérique {dev}")
+        accel = backend.torch_accel()
+        gpu_unused = g.vendor in ("nvidia", "amd") and accel == "CPU"
+        hint = {"nvidia": " — relancer l'installateur (PyTorch CUDA)",
+                "amd": " — pilote Adrenalin ≥ 26.2.2 + Windows 11, ou groupes render/video sous Linux"}
+        line(not gpu_unused, "pose (torch)", f"accélération {accel}" + (hint[g.vendor] if gpu_unused else ""),
+             blocking=False)
     except ImportError:
         line(False, "pose (torch)", "PyTorch absent : pip install -e .")
+    engine = backend.whisper_engine()
+    where = {"mlx": "GPU Apple", "transformers": "GPU AMD (ROCm)",
+             "faster-whisper": "GPU NVIDIA si disponible, sinon processeur"}[engine]
+    line(True, "transcription", f"{engine} · {where}")
     vlm = C.resolve_vlm(None)
     if backend.name() == "portable":
         from .vision import OllamaVLM
