@@ -93,8 +93,8 @@ Dépôt : `git@github.com:budocay/videoAnalyzer.git` (branche `main`).
 | Tout le programme sur Mac Apple Silicon, installateur compris (depuis l'archive, dossier vierge) | ✅ testé |
 | Moteur Windows/Linux (Ollama + faster-whisper), exécuté sur le Mac | ✅ testé |
 | Transcription via transformers (chemin AMD), exécutée sur le GPU du Mac | ✅ testé |
-| `install.cmd` / `install.ps1` sur un vrai Windows | ❌ jamais exécuté (pas de PowerShell sur le Mac pour vérifier) |
-| PyTorch ROCm sur la RX 7900 XT | ❌ jamais exécuté (pas de carte AMD disponible) |
+| `install.cmd` / `install.ps1` sur un vrai Windows | ✅ testé sur le PC AMD (28/09/2026), `doctor` tout OK |
+| PyTorch ROCm sur la RX 7900 XT | ✅ détecté par `doctor` ; ❌ pas encore d'analyse complète lancée |
 | Installateur Linux, cartes NVIDIA | ❌ jamais exécutés |
 
 **La première installation sur le PC AMD est donc le premier vrai test Windows + ROCm.**

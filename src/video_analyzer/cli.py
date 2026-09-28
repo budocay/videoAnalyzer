@@ -173,9 +173,11 @@ def doctor() -> int:
     if backend.name() == "portable":
         from .vision import OllamaVLM
 
+        print(f"    chargement de {vlm} dans Ollama…", flush=True)
         try:
-            OllamaVLM(vlm, timeout=5).close()
-            line(True, "VLM (Ollama)", f"{vlm} prêt")
+            m = OllamaVLM(vlm, timeout=180)  # first load of the 8B into VRAM takes well over 5 s
+            m.close()
+            line(True, "VLM (Ollama)", f"{vlm} prêt (chargé en {m.load_seconds:.0f} s)")
         except RuntimeError as e:
             line(False, "VLM (Ollama)", str(e))
     for repo in required_repos(vlm, C.DEFAULT_WHISPER):

@@ -103,6 +103,8 @@ class OllamaVLM:
         except urllib.error.URLError as e:
             raise RuntimeError(f"Ollama injoignable sur {self.url} ({e}). Lance l'application Ollama "
                                "ou `ollama serve`.") from e
+        except TimeoutError as e:  # connected, but no answer in time (e.g. cold model load)
+            raise RuntimeError(f"Ollama n'a pas répondu en {self.timeout:.0f} s sur {path}") from e
 
     def ask(self, prompt: str, images: list[Path] | None = None, max_tokens: int = 400) -> Answer:
         import base64
