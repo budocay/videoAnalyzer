@@ -11,6 +11,16 @@ def st(games, points):
     return ScoreState(["A", "B"], [True, False], games, points)
 
 
+def test_line_row_snaps_to_painted_line_not_segment_end():
+    from video_analyzer.padel.court import _line_row
+
+    segs = np.array([[586, 731, 1308, 731], [590, 732, 1300, 732],  # far service line seen through the net
+                     [808, 714, 1309, 718],                          # net tape, shorter
+                     [961, 673, 958, 947]], dtype=float)             # centre line overshooting to row 673
+    assert abs(_line_row(segs, 673, 661, 769) - 731.5) < 1
+    assert _line_row(segs, 673, 600, 650) is None
+
+
 def test_pose_fps_caps_high_frame_rates():
     from types import SimpleNamespace
 

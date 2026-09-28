@@ -56,8 +56,14 @@ def _calibrate(info: VideoInfo, rallies, cache: Path) -> C.Court:
     if path.exists():
         return C.load(path)
     best = None
+    # middle of the 6 longest rally shots; a long shot (continuous fixed camera: one shot for the whole match)
+    # gets several frames, since players can hide the lines at any given instant
+    times = []
     for s in sorted(rallies, key=lambda s: -s.duration)[:6]:
-        f = SC._frame(info, s.start + s.duration / 2)
+        k = int(min(8, max(1, s.duration // 60)))
+        times += [s.start + s.duration * (i + 0.5) / k for i in range(k)]
+    for t in times:
+        f = SC._frame(info, t)
         if f is None:
             continue
         try:

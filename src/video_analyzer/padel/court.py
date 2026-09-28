@@ -106,19 +106,71 @@ def _proj1d(ys, vs):
     return lambda y: (a * y + b) / (c * y + 1), a / c
 
 
-def calibrate(img: np.ndarray) -> Court:
-    """img: RGB uint8 main-camera frame at source resolution."""
-    h, w = img.shape[:2]
-    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    hue = _court_hue(hsv)
-    mask = _hue_mask(hsv, hue)
-    segs = _segments(img, mask)
+def _line_row(segs: np.ndarray, v: float, lo: float, hi: float) -> float | None:
+    """Row in [lo, hi] with the most horizontal white-line length (4-px bins), nearest to v on ties."""
+    hs = [s for s in segs if _angle(s) < 4 and lo <= (s[1] + s[3]) / 2 <= hi]
+    if not hs:
+        return None
+    bins: dict[int, float] = {}
+    for s in hs:
+        bins[round((s[1] + s[3]) / 8)] = bins.get(round((s[1] + s[3]) / 8), 0.0) + abs(s[2] - s[0])
+    b = max(bins, key=lambda k: (bins[k], -abs(k * 4 - v)))
+    rows = [(s[1] + s[3]) / 2 for s in hs if round((s[1] + s[3]) / 8) == b]
+    return float(np.median(rows))
 
+
+def _centre_line(segs: np.ndarray):
     ver = [s for s in segs if _angle(s) > 60]
     if not ver:
         raise CourtNotFound("ligne centrale de service introuvable")
     c = max(ver, key=lambda s: np.hypot(s[2] - s[0], s[3] - s[1]))
-    (x_top, v_far), (x_bot, v_near) = sorted([(c[0], c[1]), (c[2], c[3])], key=lambda p: p[1])
+    return sorted([(c[0], c[1]), (c[2], c[3])], key=lambda p: p[1])  # (x, row) top end, bottom end
+
+
+def _court_from(src, method: str, size, hue: int, centre_pts, w_far: float) -> Court:
+    """Homography from the 4 image points of the service-line corners; residual = centre service line vs x = 5 m,
+    in far-service-line pixels."""
+    s = SERVICE_LINE_FROM_WALL
+    dst = [[0, s], [COURT_WIDTH, s], [COURT_WIDTH, COURT_LENGTH - s], [0, COURT_LENGTH - s]]
+    Hm = cv2.getPerspectiveTransform(np.float32(src), np.float32(dst))
+    corners = cv2.perspectiveTransform(
+        np.float64([[[0, 0]], [[COURT_WIDTH, 0]], [[COURT_WIDTH, COURT_LENGTH]], [[0, COURT_LENGTH]]]),
+        np.linalg.inv(Hm)).reshape(-1, 2)
+    court = Court(corners.tolist(), size, hue, residual_px=float("nan"), method=method, H=Hm.tolist())
+    mid = court.to_court(np.array(centre_pts))
+    court.residual_px = float(np.abs(mid[:, 0] - COURT_WIDTH / 2).max() * w_far / COURT_WIDTH)
+    return court
+
+
+def calibrate(img: np.ndarray) -> Court:
+    """img: RGB uint8 main-camera frame at source resolution. The TV-camera method comes first and is kept
+    whenever it finds both sidelines (unchanged results on broadcasts); the low-camera method is tried when it
+    fails or has to fall back to the net, and wins only with a smaller residual."""
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    hue = _court_hue(hsv)
+    segs = _segments(img, _hue_mask(hsv, hue))
+    tv, err = None, None
+    try:
+        tv = _calibrate_tv(img, hue, segs)
+        if tv.method == "sidelines":
+            return tv
+    except CourtNotFound as e:
+        err = e
+    try:
+        low = _calibrate_low(img, hue, segs)
+    except CourtNotFound:
+        low = None
+    if low is not None and (tv is None or low.residual_px < tv.residual_px):
+        return low
+    if tv is None:
+        raise err
+    return tv
+
+
+def _calibrate_tv(img: np.ndarray, hue: int, segs: np.ndarray) -> Court:
+    """High camera behind the court (broadcasts): the centre line spans both service lines."""
+    h, w = img.shape[:2]
+    (x_top, v_far), (x_bot, v_near) = _centre_line(segs)
     center_x = lambda v: x_top + (x_bot - x_top) * (v - v_far) / (v_near - v_far)
 
     far = _row_extent(segs, v_far)
@@ -144,17 +196,34 @@ def calibrate(img: np.ndarray) -> Court:
         wn = 1 / (alpha + beta * (COURT_LENGTH - s))
         cx = center_x(v_near)
         src = [[far[0], v_far], [far[1], v_far], [cx + wn / 2, v_near], [cx - wn / 2, v_near]]
-    dst = [[0, s], [COURT_WIDTH, s], [COURT_WIDTH, COURT_LENGTH - s], [0, COURT_LENGTH - s]]
-    Hm = cv2.getPerspectiveTransform(np.float32(src), np.float32(dst))
-    corners = cv2.perspectiveTransform(
-        np.float64([[[0, 0]], [[COURT_WIDTH, 0]], [[COURT_WIDTH, COURT_LENGTH]], [[0, COURT_LENGTH]]]),
-        np.linalg.inv(Hm)).reshape(-1, 2)
-    court = Court(corners.tolist(), (w, h), hue, residual_px=float("nan"), method=method, H=Hm.tolist())
+    return _court_from(src, method, (w, h), hue, [[x_top, v_far], [x_bot, v_near]], w_far)
 
-    # Validation: the centre service line must map to x = 5 m.
-    mid = court.to_court(np.array([[x_top, v_far], [x_bot, v_near]]))
-    court.residual_px = float(np.abs(mid[:, 0] - COURT_WIDTH / 2).max() * w_far / COURT_WIDTH)
-    return court
+
+def _calibrate_low(img: np.ndarray, hue: int, segs: np.ndarray) -> Court:
+    """Low camera behind the near back glass (FIP Platinum Lyon stream): the far half is squeezed behind the net,
+    the far service line is only visible through the mesh and often occluded, and the centre-line segment
+    continues up through the net. So: snap both ends of the centre line to the rows of the painted service lines,
+    anchor the sidelines on the ends of the fully visible near service line (they are flat, ~20°), and intersect
+    them with both service rows."""
+    h, w = img.shape[:2]
+    (x_top, top), (x_bot, bot) = _centre_line(segs)
+    span = bot - top
+    v_near = _line_row(segs, bot, bot - 0.1 * span, bot + 12) or bot
+    v_far = _line_row(segs, top, top - 12, top + 0.35 * span)
+    if v_far is None:
+        raise CourtNotFound("ligne de service lointaine introuvable")
+    center_x = lambda v: x_top + (x_bot - x_top) * (v - top) / (bot - top)
+    near = _row_extent(segs, v_near)
+    if near is None:
+        raise CourtNotFound("ligne de service proche introuvable")
+    left = _sideline(img, (near[0], v_near), min_angle=12)
+    right = _sideline(img, (near[1], v_near), min_angle=12)
+    if left is None or right is None:
+        raise CourtNotFound("bords latéraux introuvables")
+    src = [[_x_at(left, v_far), v_far], [_x_at(right, v_far), v_far],
+           [_x_at(right, v_near), v_near], [_x_at(left, v_near), v_near]]
+    return _court_from(src, "sidelines_low", (w, h), hue,
+                       [[center_x(v_far), v_far], [center_x(v_near), v_near]], src[1][0] - src[0][0])
 
 
 def _x_at(line: np.ndarray, v: float) -> float:
@@ -162,7 +231,8 @@ def _x_at(line: np.ndarray, v: float) -> float:
     return float(x1 + (x2 - x1) * (v - y1) / (y2 - y1))
 
 
-def _sideline(img: np.ndarray, anchor: tuple[float, float], max_dist: float = 20) -> np.ndarray | None:
+def _sideline(img: np.ndarray, anchor: tuple[float, float], max_dist: float = 20,
+              min_angle: float = 25) -> np.ndarray | None:
     """Longest oblique edge segment whose supporting line passes through `anchor`."""
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     edges = cv2.Canny(cv2.GaussianBlur(gray, (5, 5), 0), 40, 120)
@@ -173,7 +243,7 @@ def _sideline(img: np.ndarray, anchor: tuple[float, float], max_dist: float = 20
     for sg in segs.reshape(-1, 4).astype(np.float64):
         d = sg[2:] - sg[:2]
         ang = np.degrees(np.arctan2(d[1], d[0])) % 180
-        if not (25 < ang < 85 or 95 < ang < 155):
+        if not (min_angle < ang < 85 or 95 < ang < 180 - min_angle):
             continue
         length = float(np.hypot(*d))
         n = np.array([-d[1], d[0]]) / length
