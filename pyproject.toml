@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-analyzer"
+version = "0.1.0"
+description = "Analyse vidéo 100 % locale : MLX sur Apple Silicon, Ollama + faster-whisper ailleurs"
+readme = "README.md"
+requires-python = ">=3.11"
+# Apple Silicon: MLX stack. Elsewhere (Windows, Linux, Intel Mac): faster-whisper + a local Ollama
+# for the VLM (installed by scripts/install.*). Pose and the rest are common (PyTorch via ultralytics).
+dependencies = [
+    "mlx-vlm>=0.7.2; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "mlx-whisper>=0.4.3; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "mlx-audio>=0.5; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "faster-whisper>=1.2; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "ultralytics>=8.3",
+    "matplotlib>=3.8",
+    "scipy>=1.11",
+    "numpy>=1.26",
+    "pillow>=10",
+    "opencv-python>=4.9",
+    "huggingface_hub>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+video-analyzer = "video_analyzer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

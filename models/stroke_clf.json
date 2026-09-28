@@ -1,0 +1,17 @@
+{
+ "classes": [
+  "bandeja_vibora",
+  "coup_droit",
+  "lob",
+  "pas_une_frappe",
+  "revers",
+  "service",
+  "smash",
+  "volee_cd",
+  "volee_revers"
+ ],
+ "feature_version": 1,
+ "cv_accuracy": 0.4717741935483871,
+ "vlm_accuracy": 0.18220338983050846,
+ "n": 248
+}
