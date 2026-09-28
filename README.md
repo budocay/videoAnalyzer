@@ -375,6 +375,7 @@ annotations et le classifieur de coups entraîné, sans l'environnement Python, 
 
 ## 9. Pour aller plus loin
 
+- [`docs/REPRISE.md`](docs/REPRISE.md) : récapitulatif du projet et checklist pour reprendre sur une autre machine.
 - [`docs/TECHNIQUE.md`](docs/TECHNIQUE.md) : fonctionnement détaillé (pipeline, padel, apprentissage),
   performances mesurées, formats testés, schéma JSON.
 - [`CLAUDE.md`](CLAUDE.md) : décisions de conception et pièges rencontrés, pour les développeurs.

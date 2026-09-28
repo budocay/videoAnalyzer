@@ -1,5 +1,7 @@
 # video-analyzer — notes for future sessions
 
+Start with docs/REPRISE.md (French handoff: history, status, what is untested, next steps).
+
 Local-only video analysis. Developed on Apple Silicon (M1 Max, 32 GB) with MLX; also runs on
 Windows / Linux / Intel Mac through the "portable" backend (see below). **No cloud calls, ever.** Hugging Face is only used to download weights once; `hub.py` then sets
 `HF_HUB_OFFLINE=1` (verified: a run with `HF_ENDPOINT=http://127.0.0.1:9` succeeds).
