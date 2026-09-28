@@ -28,8 +28,9 @@ samples/        test_synth.mp4, 20260924_114504.mp4 (user's real clip: Samsung H
                 matrix/ (vp9, av1, prores, hdr10 pq, rot90, short odd mkv, avi, mp3+cover) + outputs
 ```
 
-Environment: existing `.venv` (arm64, Python 3.14) with `pip install -e ".[dev]"`. Do not migrate to uv.
-Run tests with `.venv/bin/python -m pytest -q`.
+Environment (since 2026-09-28 the only machine is the Windows PC: Ryzen 7 5800X3D + RX 7900 XT 20 GB, the Mac is
+no longer used): `.venv` (Python 3.12, AMD ROCm 7.2.1 torch wheels) made by install.cmd. Do not migrate to uv.
+Run tests with `.venv\Scripts\python -m pytest -q`; the CLI is `.\va.cmd`. The MLX path can no longer be run.
 
 ## Decisions
 
@@ -192,6 +193,12 @@ continuous (non-montage) match to validate rally/point segmentation; stroke labe
 - README.md = user/colleague-facing (prerequisites, install per OS, doctor, usage, troubleshooting, update/uninstall).
 - docs/TECHNIQUE.md = internals, measurements, schemas. Keep measured numbers there, not in the README.
 - Latest learning numbers (user labels, 315 hits on the Paris final): classifier 44 % CV vs VLM 22 % / pose 23 %.
+- 2nd match (samples/padel_paris_final_hl.mkv, despite its name Coello/Tapia vs Stupaczuk/Lebrón, VP9 1440p60,
+  29 min): 196 user labels, 71 are "pas_une_frappe" (hit precision ~62 %). The Paris-final classifier scored 27 % on it
+  (47 % CV on its own match) and rejected 0/71 false hits → CV on one match overestimates. Retrained on this match only:
+  ~35 % on strokes, 43/71 false hits rejected, no bandeja_vibora class (2 examples).
+- The Paris final's 315 labels are unusable: its mp4 and cache stayed on the Mac and data/features/ did not exist
+  yet. Training data is now portable (data/features/<key>.npz, written by `padel train`).
 
 ## AMD / NVIDIA GPUs (portable backend)
 

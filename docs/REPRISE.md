@@ -6,6 +6,26 @@ Windows (Ryzen 7 5800X3D + Radeon RX 7900 XT 20 Go). Mis à jour le 28 septembre
 > **Pour Claude Code sur la nouvelle machine** : lire ce fichier, puis `CLAUDE.md` (décisions techniques et pièges),
 > puis `docs/TECHNIQUE.md` (fonctionnement détaillé et mesures). Tout y est ; l'historique de conversation ne suit pas.
 
+## 0. Depuis la reprise sur le PC Windows (28 septembre 2026)
+
+**Le Mac n'est plus utilisé : le PC Windows AMD est la seule machine.** Les sections 4.4 (copie depuis le Mac) et
+les chiffres « Mac » ci-dessous sont historiques.
+
+- Installation Windows + ROCm validée : `va.cmd doctor` tout OK (RX 7900 XT, pose ROCm, transcription ROCm,
+  qwen3-vl:8b `100% GPU`).
+- Corrigé sur le PC : délai de `doctor`, ffmpeg introuvable dans un terminal ouvert avant l'installation, accents
+  brouillés avec `| Out-Host` (ultralytics forçait l'UTF-8), contexte Ollama trop petit (HTTP 400 sur les frappes).
+- Accéléré : pose 11.6 → 73 img/s (tube Windows, 30 img/s max, réduction par ffmpeg), étape des frappes > 1 h →
+  quelques secondes (classifieur au lieu du VLM quand il est meilleur), images d'annotation 4× plus vite.
+- Match analysé : `samples/padel_paris_final_hl.mkv` — malgré son nom, **Coello/Tapia contre Stupaczuk/Lebrón**
+  (7-5, 5-2), VP9 1440p 60 i/s, 29 min. Analyse complète à froid ≈ 35 min, rapport depuis le cache ≈ 1 min.
+- 196 frappes annotées sur ce match (71 « pas une frappe »). Classifieur réentraîné sur ce seul match. Les 315
+  annotations de la finale de Paris sont **inutilisables** (vidéo et cache restés sur le Mac) ; les données
+  d'entraînement sont désormais portables (`data/features/`), ce qui n'arrivera plus.
+- Prochaines étapes : annoter d'autres matchs (au moins 50 exemples par coup, bandeja/víbora et coup droit/revers
+  surtout), fiabiliser la détection des frappes (36 % de fausses frappes sur ce match), noms des joueurs, deux
+  frappes consécutives d'un même camp vues dans une séquence (à vérifier).
+
 ---
 
 ## 1. Le projet en bref
