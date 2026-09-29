@@ -93,6 +93,24 @@ def test_collect_uses_saved_features_without_cache(tmp_path):
     assert np.array_equal(s[0].x, x)
 
 
+def test_collect_keeps_saved_features_after_reanalysis(tmp_path, monkeypatch):
+    """A re-analysis gives new hit keys: labels made on the previous analysis must stay usable."""
+    from video_analyzer.padel import learn as L
+
+    (tmp_path / "labels").mkdir()
+    (tmp_path / "labels" / "v-abc.json").write_text(json.dumps({"video": "v.mp4", "key": "v-abc", "labels": {
+        "0:500:2": {"label": "smash", "annotator": "user"},     # made on the old analysis
+        "7:20:2": {"label": "revers", "annotator": "user"}}}))  # made on the new one
+    x = np.arange(5, dtype=np.float32)
+    L._save_features("v-abc", [("0:500:2", x, "", "bandeja")], tmp_path)
+    new_hit = _hit(frame=20, shot=7)
+    monkeypatch.setattr(L, "load_hits", lambda key, root: ([new_hit], {7: _tracks()}))
+    monkeypatch.setattr(L.CL, "hit_features", lambda h, tr: x + 1)
+    s = L.collect(tmp_path, tmp_path)
+    assert sorted((o.key, o.y) for o in s) == [("0:500:2", "smash"), ("7:20:2", "revers")]
+    assert sorted(r[0] for r in L._load_features("v-abc", tmp_path)) == ["0:500:2", "7:20:2"]
+
+
 def test_classifier_beats_vlm_handles_missing_vlm_measure():
     from video_analyzer.padel.learn import classifier_beats_vlm
 

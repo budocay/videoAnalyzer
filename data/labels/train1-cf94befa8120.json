@@ -1,0 +1,346 @@
+{
+ "video": "train1.mp4",
+ "key": "train1-cf94befa8120",
+ "labels": {
+  "35:1:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "14:1555:3": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "12:73:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "57:6548:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "66:1164:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "5:866:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "61:2012:0": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "54:1970:3": {
+   "label": "sortie_vitre",
+   "annotator": "user"
+  },
+  "23:1512:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:2732:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "69:233:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "68:1115:2": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "57:3668:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "33:67:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "61:1633:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "9:1703:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "69:316:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "18:66:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "16:272:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "16:594:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "7:61:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "39:1009:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "9:1787:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "59:38:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "23:1992:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "57:1910:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "41:567:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "56:77:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "68:87:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "63:165:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "9:352:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:593:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:201:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "2:76:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "57:6677:0": {
+   "label": "vibora",
+   "annotator": "user"
+  },
+  "54:55:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "70:1675:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "59:1211:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:6250:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "57:3197:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "16:102:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "56:137:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "61:272:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "48:309:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "62:1113:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "37:168:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "68:330:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "9:2304:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:3739:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "68:437:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:152:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "59:95:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "54:475:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "54:1238:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "16:816:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "68:1178:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "70:1685:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "41:324:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "68:384:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:5957:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "10:97:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:2929:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "70:983:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "56:24:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "30:47:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "62:1071:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "57:6950:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "56:257:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "2:206:0": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "70:837:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "43:772:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "45:245:0": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "52:10:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "66:1277:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "35:741:3": {
+   "label": "bandeja",
+   "annotator": "user"
+  },
+  "10:231:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "56:1264:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "57:5984:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "30:324:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "58:2278:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "12:158:3": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "57:6915:0": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "56:513:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "62:2324:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "57:2948:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  }
+ }
+}

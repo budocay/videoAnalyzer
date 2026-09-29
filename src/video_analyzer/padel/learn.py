@@ -76,18 +76,23 @@ def collect(cache_root: Path, data_dir: Path = DATA_DIR, missing: list | None = 
     samples = []
     for key in _labelled_keys(data_dir):
         labels = load_labels(key, data_dir)
+        saved = {r[0]: r for r in (_load_features(key, data_dir) or [])}
         try:
             hits, tracks = load_hits(key, cache_root)
-            rows = [(h.key, x, h.stroke_vlm, h.stroke_pose) for h in hits if h.key in labels
-                    and (x := CL.hit_features(h, tracks[h.shot_id])) is not None]
-            if rows:
-                _save_features(key, rows, data_dir)
+            fresh = {h.key: (h.key, x, h.stroke_vlm, h.stroke_pose) for h in hits if h.key in labels
+                     and (x := CL.hit_features(h, tracks[h.shot_id])) is not None}
         except FileNotFoundError:
-            rows = _load_features(key, data_dir)
-            if rows is None:
-                if missing is not None:
-                    missing.append(key)
-                continue
+            fresh = {}
+        # merge, never replace: a re-analysis (new shot split → new hit keys) must not drop the features of hits
+        # labelled on a previous analysis (train2: 91 labels made before the jump-cut split)
+        merged = {**saved, **fresh}
+        if fresh:
+            _save_features(key, list(merged.values()), data_dir)
+        rows = [r for k, r in merged.items() if k in labels]
+        if not rows:
+            if missing is not None:
+                missing.append(key)
+            continue
         for hkey, x, vlm, pose in rows:
             lab = labels.get(hkey)
             y = CL.target(lab["label"]) if lab else None

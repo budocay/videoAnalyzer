@@ -1,0 +1,370 @@
+{
+ "video": "train2.mp4",
+ "key": "train2-46d97af5ebfd",
+ "labels": {
+  "0:21987:2": {
+   "label": "sortie_vitre",
+   "annotator": "user"
+  },
+  "0:17028:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:19134:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:1572:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:25301:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:24964:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:24187:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:4913:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:885:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:10560:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16631:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:7391:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16155:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:13956:3": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "0:8974:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:20375:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:1165:1": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:17239:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:1594:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:9144:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16655:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:9691:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:9636:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:235:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:27418:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:16495:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:9985:3": {
+   "label": "bandeja_ou_vibora",
+   "annotator": "user"
+  },
+  "0:24679:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:3064:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:28128:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:5658:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:4387:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:430:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:26132:3": {
+   "label": "incertain",
+   "annotator": "user"
+  },
+  "0:10423:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:6267:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:4024:1": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:11889:2": {
+   "label": "sortie_vitre",
+   "annotator": "user"
+  },
+  "0:7507:3": {
+   "label": "lob",
+   "annotator": "user"
+  },
+  "0:10951:3": {
+   "label": "revers",
+   "annotator": "user"
+  },
+  "0:27783:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "0:24118:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:14761:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16326:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:1298:2": {
+   "label": "sortie_vitre",
+   "annotator": "user"
+  },
+  "0:25170:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:24635:0": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:7067:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "0:17225:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:23623:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:2756:0": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:10068:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:3886:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:21199:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "0:7187:1": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:17465:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:25494:0": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:907:0": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:13066:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:25374:2": {
+   "label": "service",
+   "annotator": "user"
+  },
+  "0:20740:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:11555:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:11626:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:19176:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:2276:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:8367:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:4960:1": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:23179:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:27277:0": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:15138:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16204:2": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:7360:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:1690:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:12286:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:14106:0": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:26683:3": {
+   "label": "bandeja",
+   "annotator": "user"
+  },
+  "0:10503:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:27255:2": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:26220:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:2723:2": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:2019:1": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:16719:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:25078:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:339:3": {
+   "label": "smash",
+   "annotator": "user"
+  },
+  "0:18042:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:5768:2": {
+   "label": "coup_droit",
+   "annotator": "user"
+  },
+  "0:5333:2": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:10409:3": {
+   "label": "volee_cd",
+   "annotator": "user"
+  },
+  "0:943:3": {
+   "label": "pas_une_frappe",
+   "annotator": "user"
+  },
+  "0:27151:3": {
+   "label": "volee_revers",
+   "annotator": "user"
+  },
+  "0:4308:3": {
+   "label": "sortie_vitre",
+   "annotator": "user"
+  }
+ }
+}
