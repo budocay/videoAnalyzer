@@ -147,6 +147,14 @@ Pitfalls hit in phase 2:
   `bufsize=0` + `readinto` a preallocated frame in a reader thread → 95 img/s decode, pose 11.6 → 48 img/s on the
   RX 7900 XT. fp16 rejected (moves keypoints). Then ffmpeg downscales to IMGSZ itself (ultralytics' CPU letterbox
   fought ffmpeg for cores) and pose is sampled at POSE_FPS=30 → 73 img/s = 2.4 s of video/s on 1440p60.
+- samples/train2.mp4 (FIP Platinum Lyon, Sager/Cepero vs Leal/Guerrero, 16 min) = low fixed camera behind the near
+  glass, **condensed** (dead time cut, no visible cut: histogram distance 0.03–0.09 at the cuts). Fixes it needed:
+  jump cuts from isolated motion spikes (shots.jump_cuts, 77 cuts ≈ one per point); court method `sidelines_low`
+  (far half only seen through the net mesh, whose strands make every row look like a line → depth from near service
+  line + net base + sidelines' vanishing point, court.row_of; TV method runs first, identical results on 22 TV
+  frames); tracking reach grows 8 m/s while a slot is unseen (a fixed 2.5 m lost players for good on long shots:
+  far players present 3 % → 34 %). Audio is useless there for rally splitting (adjacent courts: no gap > 4 s).
+  The scoreboard bbox can be asked to Qwen3-VL (normalised 0–1000 `bbox_2d`, exact on Lyon).
 - All stroke/hit settings are per *frame* (wrist speed/frame, smash speed > 0.45, ±2 frames, classifier ±15 frames),
   tuned at ~30 img/s: never feed tracks at another rate (players.pose_fps). hit_crops decodes at native fps.
 

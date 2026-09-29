@@ -200,19 +200,15 @@ def _calibrate_tv(img: np.ndarray, hue: int, segs: np.ndarray) -> Court:
 
 
 def _calibrate_low(img: np.ndarray, hue: int, segs: np.ndarray) -> Court:
-    """Low camera behind the near back glass (FIP Platinum Lyon stream): the far half is squeezed behind the net,
-    the far service line is only visible through the mesh and often occluded, and the centre-line segment
-    continues up through the net. So: snap both ends of the centre line to the rows of the painted service lines,
-    anchor the sidelines on the ends of the fully visible near service line (they are flat, ~20°), and intersect
-    them with both service rows."""
+    """Low camera behind the near back glass (FIP Platinum Lyon stream). The whole far half is seen through the
+    net: every row of the mesh band yields edge-to-edge horizontal segments, so the far service line cannot be
+    told from the mesh (picking the wrong row put it at 776 px instead of 731). Depth comes from geometry instead:
+    the row map v(y) along the court is projective, fixed by three constraints — near service line (y=16.95,
+    fully visible), net base (y=10: lowest row of the mesh band) and the vanishing point of the sidelines (y→∞).
+    Sidelines are anchored on the ends of the near service line (flat, ~20°)."""
     h, w = img.shape[:2]
     (x_top, top), (x_bot, bot) = _centre_line(segs)
-    span = bot - top
-    v_near = _line_row(segs, bot, bot - 0.1 * span, bot + 12) or bot
-    v_far = _line_row(segs, top, top - 12, top + 0.35 * span)
-    if v_far is None:
-        raise CourtNotFound("ligne de service lointaine introuvable")
-    center_x = lambda v: x_top + (x_bot - x_top) * (v - top) / (bot - top)
+    v_near = _line_row(segs, bot, bot - 0.1 * (bot - top), bot + 12) or bot
     near = _row_extent(segs, v_near)
     if near is None:
         raise CourtNotFound("ligne de service proche introuvable")
@@ -220,10 +216,45 @@ def _calibrate_low(img: np.ndarray, hue: int, segs: np.ndarray) -> Court:
     right = _sideline(img, (near[1], v_near), min_angle=12)
     if left is None or right is None:
         raise CourtNotFound("bords latéraux introuvables")
+    line = lambda s: np.cross([s[0], s[1], 1.0], [s[2], s[3], 1.0])
+    vp = np.cross(line(left), line(right))
+    if abs(vp[2]) < 1e-9:
+        raise CourtNotFound("bords latéraux parallèles")
+    v_inf = vp[1] / vp[2]
+    v_net = _net_base_row(segs, left, right, top, v_near)
+    if v_net is None or not v_inf < v_net < v_near:
+        raise CourtNotFound("base du filet introuvable")
+    v_far = row_of(SERVICE_LINE_FROM_WALL, v_near, v_net, v_inf)
+    if not v_inf < v_far < v_net:
+        raise CourtNotFound("profondeur incohérente")
+    center_x = lambda v: x_top + (x_bot - x_top) * (v - top) / (bot - top)
     src = [[_x_at(left, v_far), v_far], [_x_at(right, v_far), v_far],
            [_x_at(right, v_near), v_near], [_x_at(left, v_near), v_near]]
+    # residual on the centre line between the net and the near service line (the part painted on this side)
     return _court_from(src, "sidelines_low", (w, h), hue,
-                       [[center_x(v_far), v_far], [center_x(v_near), v_near]], src[1][0] - src[0][0])
+                       [[center_x(v_net), v_net], [center_x(v_near), v_near]], src[1][0] - src[0][0])
+
+
+def row_of(y: float, v_near: float, v_net: float, v_inf: float) -> float:
+    """Image row of court depth y, from the rows of the near service line (y=16.95), of the net base (y=10) and
+    of the sidelines' vanishing point (y→∞): v(y) = (a y + b) / (c y + 1) with a / c = v_inf."""
+    y1, y2 = COURT_LENGTH - SERVICE_LINE_FROM_WALL, NET_Y
+    A = np.array([[y1, 1, -y1 * v_near], [y2, 1, -y2 * v_net], [1, 0, -v_inf]], dtype=float)
+    a, b, c = np.linalg.solve(A, np.array([v_near, v_net, 0.0]))
+    return float((a * y + b) / (c * y + 1))
+
+
+def _net_base_row(segs: np.ndarray, left, right, top: float, v_near: float) -> float | None:
+    """Lowest row (above the near service line) whose horizontal segments span >= 60 % of the court width between
+    the sidelines: the bottom strand of the net mesh, where it meets the floor."""
+    rows = sorted({round((s[1] + s[3]) / 2) for s in segs if _angle(s) < 4 and top < (s[1] + s[3]) / 2 < v_near - 60},
+                  reverse=True)
+    for row in rows:
+        g = [s for s in segs if _angle(s) < 4 and abs((s[1] + s[3]) / 2 - row) < 3]
+        x0, x1 = min(min(s[0], s[2]) for s in g), max(max(s[0], s[2]) for s in g)
+        if (x1 - x0) / (_x_at(right, row) - _x_at(left, row)) >= 0.6:
+            return float(row)
+    return None
 
 
 def _x_at(line: np.ndarray, v: float) -> float:

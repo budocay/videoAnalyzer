@@ -36,6 +36,7 @@ def pose_fps(info: VideoInfo) -> float:
     return POSE_FPS if info.native_fps > POSE_FPS * 1.05 else info.native_fps
 MARGIN = 0.6  # metres outside the lines still counted as "on court" (players lean on the glass)
 MAX_JUMP = 2.5  # metres a player can move between two frames before the slot is considered lost
+MAX_SPEED = 8.0  # m/s (sprint): extra reach per second a slot has been unseen
 
 
 @dataclass
@@ -125,10 +126,15 @@ class PoseTracker:
         frames = stream(info, sw, sh, start=start, end=end, fps=fps if fps != info.native_fps else None)
         pos, kpts, cols = [], [], [[] for _ in range(4)]
         prev = np.full((4, 2), np.nan)
+        last = np.zeros(4)  # frame index where each slot was last seen
         batch = []
 
         def flush():
             for dets in self._detect(batch, w / sw):
+                # allowed jump grows with the time the slot has been unseen: a fixed 2.5 m from the last position
+                # lost players for good on a continuous 16-min shot (presence 12–42 %); montage shots are short and
+                # restart from scratch, which hid it
+                reach = MAX_JUMP + MAX_SPEED * (len(pos) - last) / fps
                 p_t = np.full((4, 2), np.nan)
                 k_t = np.zeros((4, 17, 3))
                 for side, slots in ((0, (0, 1)), (1, (2, 3))):
@@ -151,7 +157,7 @@ class PoseTracker:
                         assign = [(slots[i], j) for i, j in zip(r_, c_)]
                     for s, j in assign:
                         p, k, c = cand[j]
-                        if not np.isnan(prev[s]).any() and np.linalg.norm(prev[s] - p) > MAX_JUMP:
+                        if not np.isnan(prev[s]).any() and np.linalg.norm(prev[s] - p) > reach[s]:
                             continue
                         p_t[s], k_t[s] = p, k
                         if c is not None:
@@ -159,6 +165,7 @@ class PoseTracker:
                 for s in range(4):
                     if not np.isnan(p_t[s]).any():
                         prev[s] = p_t[s]
+                        last[s] = len(pos)
                 pos.append(p_t)
                 kpts.append(k_t)
             batch.clear()

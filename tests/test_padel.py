@@ -11,14 +11,23 @@ def st(games, points):
     return ScoreState(["A", "B"], [True, False], games, points)
 
 
-def test_line_row_snaps_to_painted_line_not_segment_end():
-    from video_analyzer.padel.court import _line_row
+def test_depth_rows_from_near_line_net_and_vanishing_point():
+    """Low camera: the far service row is derived, not detected. Check against a known homography."""
+    import cv2
 
-    segs = np.array([[586, 731, 1308, 731], [590, 732, 1300, 732],  # far service line seen through the net
-                     [808, 714, 1309, 718],                          # net tape, shorter
-                     [961, 673, 958, 947]], dtype=float)             # centre line overshooting to row 673
-    assert abs(_line_row(segs, 673, 661, 769) - 731.5) < 1
-    assert _line_row(segs, 673, 600, 650) is None
+    from video_analyzer.padel.court import row_of
+
+    court = np.float32([[0, 0], [10, 0], [10, 20], [0, 20]])
+    img = np.float32([[610, 712], [1310, 712], [2170, 1065], [-230, 1065]])  # like the Lyon stream
+    Hi = cv2.getPerspectiveTransform(court, img)
+    v = lambda y: cv2.perspectiveTransform(np.float64([[[5.0, y]]]), Hi)[0, 0, 1]
+    left = cv2.perspectiveTransform(np.float64([[[0, 0]], [[0, 20]]]), Hi).reshape(-1)
+    right = cv2.perspectiveTransform(np.float64([[[10, 0]], [[10, 20]]]), Hi).reshape(-1)
+    line = lambda s: np.cross([s[0], s[1], 1.0], [s[2], s[3], 1.0])
+    vp = np.cross(line(left), line(right))
+    v_inf = vp[1] / vp[2]
+    for y in (0.0, 3.05, 6.0):
+        assert abs(row_of(y, v(16.95), v(10.0), v_inf) - v(y)) < 0.01
 
 
 def test_pose_fps_caps_high_frame_rates():
@@ -30,6 +39,17 @@ def test_pose_fps_caps_high_frame_rates():
     assert pose_fps(SimpleNamespace(native_fps=50.0)) == 30.0
     assert pose_fps(SimpleNamespace(native_fps=29.97)) == 29.97  # settings were tuned at this rate
     assert pose_fps(SimpleNamespace(native_fps=25.0)) == 25.0
+
+
+def test_jump_cuts_isolated_spikes_only():
+    from video_analyzer.padel.shots import jump_cuts
+
+    fps = 30
+    m = np.full(3000, 0.3)
+    m[300] = 4.0                 # jump cut: one-frame spike → cut
+    m[900:910] = 4.0             # pan: sustained motion → no cut
+    m[1500], m[1530] = 4.0, 4.0  # burst 1 s apart (flash) → only the first
+    assert jump_cuts(m, fps) == [300, 1500]
 
 
 def test_split_shots_merges_short_fragments():

@@ -3,6 +3,7 @@
 1. Cuts: one low-res full-rate decode, 512-bin RGB histogram per frame, total-variation distance
    between consecutive frames. On the Paris final the distribution is bimodal (p99 = 0.12,
    p99.5 = 0.50), so a fixed threshold of 0.3 is safe; cuts closer than MIN_SHOT_S are merged.
+   Plus jump cuts inside a fixed camera (condensed matches), from isolated motion spikes: see jump_cuts.
 2. Classification: 3 keyframes per shot go to the local VLM, which answers in JSON (shot type,
    live play vs replay/slow motion, scoreboard visible). Only `principale` + live shots are
    analysed as rallies; everything else (close-ups, crowd, replays, graphics…) is "parasite".
@@ -24,6 +25,7 @@ LOW_W, LOW_H = 96, 54
 MIN_REF_CORR = 0.6  # Pearson correlation of 64x36 gray frames with the match-camera reference
 # (Paris final: match camera 0.73–0.92 — shadows move during the match —, everything else ≤ 0.45)
 SCOREBOARD_MAJORITY = 0.7
+JUMP_RATIO, JUMP_FLOOR, JUMP_ISOLATION, MIN_JUMP_SHOT_S = 6.0, 1.5, 2.5, 2.0
 
 SHOT_TYPES = {
     "principale": ("caméra de match : plan large fixe filmé en hauteur derrière un fond de court, tout le "
@@ -84,11 +86,29 @@ def frame_signals(info: VideoInfo) -> tuple[np.ndarray, np.ndarray]:
     return np.array(dist), np.array(motion)
 
 
+def jump_cuts(motion: np.ndarray, fps: float) -> list[int]:
+    """Cuts inside a fixed camera (condensed matches: dead time removed, same framing on both sides). The colour
+    histogram barely moves (0.03–0.09 vs the 0.3 threshold) but the players teleport: a one-frame spike of motion
+    energy, ≥ JUMP_RATIO × the local median and ≥ JUMP_ISOLATION × its neighbours (a pan or zoom lasts several
+    frames). Lyon stream: 77 cuts, one per point, stable for ratios 6–8."""
+    from scipy.ndimage import median_filter
+
+    base = median_filter(motion, size=31)
+    out: list[int] = []
+    for i in range(2, len(motion) - 2):
+        m = motion[i]
+        nb = max(motion[i - 2], motion[i - 1], motion[i + 1], motion[i + 2])
+        if m > JUMP_RATIO * max(base[i], 0.3) and m > JUMP_FLOOR and m > JUMP_ISOLATION * nb:
+            if not out or i - out[-1] >= MIN_JUMP_SHOT_S * fps:  # flashes / graphic transitions come in bursts
+                out.append(i)
+    return out
+
+
 def split_shots(dist: np.ndarray, fps: float, threshold: float = CUT_THRESHOLD,
-                min_shot_s: float = MIN_SHOT_S) -> list[tuple[int, int]]:
+                min_shot_s: float = MIN_SHOT_S, extra_cuts=()) -> list[tuple[int, int]]:
     """Frame ranges [start, end) between cuts; very short fragments are merged into the next shot."""
     n = len(dist)
-    cuts = [int(i) for i in np.where(dist > threshold)[0]]
+    cuts = sorted({int(i) for i in np.where(dist > threshold)[0]} | {int(i) for i in extra_cuts})
     bounds = [0]
     for c in cuts:
         if c - bounds[-1] >= min_shot_s * fps:
@@ -166,15 +186,19 @@ def detect(info: VideoInfo, cache: Path, log=print) -> list[Shot]:
     path = cache / "shots_raw.json"
     if path.exists():
         return [Shot(**d) for d in json.loads(path.read_text(encoding="utf-8"))]
-    dist, motion = frame_signals(info)
-    np.save(cache / "frame_dist.npy", dist)
-    np.save(cache / "frame_motion.npy", motion)
+    if (cache / "frame_dist.npy").exists() and (cache / "frame_motion.npy").exists():
+        dist, motion = np.load(cache / "frame_dist.npy"), np.load(cache / "frame_motion.npy")
+    else:
+        dist, motion = frame_signals(info)
+        np.save(cache / "frame_dist.npy", dist)
+        np.save(cache / "frame_motion.npy", motion)
     fps = info.native_fps
+    jumps = jump_cuts(motion, fps)
     shots = [Shot(i, a, b, round(a / fps, 3), round(b / fps, 3), motion=round(float(motion[a + 1:b].mean()) if b - a > 1 else 0.0, 3))
-             for i, (a, b) in enumerate(split_shots(dist, fps))]
+             for i, (a, b) in enumerate(split_shots(dist, fps, extra_cuts=jumps))]
     _extract_keyframes(info, shots, cache / "keyframes")
     path.write_text(json.dumps([asdict(s) for s in shots], indent=1), encoding="utf-8")
-    log(f"  {len(shots)} plans détectés")
+    log(f"  {len(shots)} plans détectés (dont {len(jumps)} coupes franches à caméra fixe)")
     return shots
 
 
