@@ -7,11 +7,14 @@
   "revers",
   "service",
   "smash",
+  "sortie_vitre",
   "volee_cd",
   "volee_revers"
  ],
  "feature_version": 1,
- "cv_accuracy": 0.4717741935483871,
- "vlm_accuracy": 0.18220338983050846,
- "n": 248
+ "cv_accuracy": 0.4602649006622517,
+ "vlm_accuracy": 0.1799163179916318,
+ "unseen_match_accuracy": 0.347682119205298,
+ "n": 604,
+ "pose_fps": 30.0
 }

@@ -8,8 +8,8 @@ Windows (Ryzen 7 5800X3D + Radeon RX 7900 XT 20 Go). Mis à jour le 28 septembre
 
 ## 0. Depuis la reprise sur le PC Windows (28 septembre 2026)
 
-**Le Mac n'est plus utilisé : le PC Windows AMD est la seule machine.** Les sections 4.4 (copie depuis le Mac) et
-les chiffres « Mac » ci-dessous sont historiques.
+Le PC Windows AMD est devenu la machine principale ; le Mac est de nouveau utilisé depuis le 7 octobre (voir
+plus bas). La section 4.4 (copie depuis le Mac) est historique.
 
 - Installation Windows + ROCm validée : `va.cmd doctor` tout OK (RX 7900 XT, pose ROCm, transcription ROCm,
   qwen3-vl:8b `100% GPU`).
@@ -25,6 +25,28 @@ les chiffres « Mac » ci-dessous sont historiques.
 - Prochaines étapes : annoter d'autres matchs (au moins 50 exemples par coup, bandeja/víbora et coup droit/revers
   surtout), fiabiliser la détection des frappes (36 % de fausses frappes sur ce match), noms des joueurs, deux
   frappes consécutives d'un même camp vues dans une séquence (à vérifier).
+
+### Depuis le retour sur le Mac (7 octobre 2026)
+
+**Les deux machines sont utilisées**, synchronisées par Git : `git pull` en arrivant, `git push` en partant.
+Les vidéos et les caches ne passent pas par Git ; les caractéristiques des frappes annotées, si (`data/features/`).
+
+- **315 annotations de la finale de Paris récupérées** : son cache n'existait que sur le Mac. `padel train` lancé
+  sur le Mac a écrit `data/features/padel_paris_final_hl-5eacad63229d.npz` (251 frappes utilisables).
+  Total : **604 frappes annotées sur 4 matchs**.
+- **Nouvelle mesure, plus honnête** : chaque match est testé par un classifieur entraîné sur les autres
+  (`data/eval/entrainement.md`, section « Sur un match jamais vu »).
+
+| Sur un match jamais vu | Précision | En répondant toujours la classe la plus fréquente |
+|---|---|---|
+| Les 10 classes | 34–35 % (46 % en validation croisée) | 30 % |
+| Famille de coup (fond / volée / au-dessus de la tête / service) | **57 %** | 38 % |
+| Côté : coup droit ou revers | 52 % | 52 % |
+| Frappe ou pas | 73 % | 70 % |
+
+- **Conclusion** : la pose reconnaît la *famille* de coup, pas le *côté* (hasard), et distingue mal vraie et fausse
+  frappe. Ajouter les 251 frappes de Paris n'a rien changé sur les autres matchs : **annoter plus ne suffira pas**.
+  Il faut donner une nouvelle information au classifieur : position de la raquette, images recadrées, ou balle.
 
 ---
 

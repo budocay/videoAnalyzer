@@ -24,6 +24,7 @@ from .strokes import Hit
 FEATURE_VERSION = 1
 WINDOW, STEP = 15, 3
 MIN_PER_CLASS = 4
+MIN_HELDOUT = 30  # a match needs this many labelled hits to be used as a held-out test
 MERGE = {"bandeja": "bandeja_vibora", "vibora": "bandeja_vibora", "bandeja_ou_vibora": "bandeja_vibora"}
 IGNORE = {"incertain"}
 LR_PAIRS = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14), (15, 16)]
@@ -173,9 +174,36 @@ def train(samples: list[Sample], k: int = 5) -> tuple[dict, dict]:
         "confusion_classifier": confusion(truth, cv_pred, classes),
         "cv_predictions": {s.key: p for s, p in zip(used, cv_pred)},
     }
+    # Honest generalisation: k-fold mixes hits of the same match (same players, camera, light) and
+    # overestimates. Hold out each match in turn, train on the others.
+    videos = [s.video for s in used]
+    by_video, hits, total = {}, 0, 0
+    for v in sorted(set(videos)):
+        test = np.array([i for i, x in enumerate(videos) if x == v])
+        rest = np.setdiff1d(np.arange(len(y)), test)
+        if len(test) < MIN_HELDOUT or len(rest) < 10 or len(set(y[rest])) < 2:
+            continue
+        m, mu, sd = _fit(X[rest], y[rest], len(classes))
+        pv = _predict(m, mu, sd, X[test]).argmax(axis=1)
+        ok = int((pv == y[test]).sum())
+        entry = {"n": int(len(test)), "accuracy": ok / len(test)}
+        if "pas_une_frappe" in classes:
+            nh = classes.index("pas_une_frappe")
+            false_hits = y[test] == nh
+            strokes = ~false_hits
+            entry["false_hits_rejected"] = [int((pv[false_hits] == nh).sum()), int(false_hits.sum())]
+            entry["real_hits_lost"] = [int((pv[strokes] == nh).sum()), int(strokes.sum())]
+            entry["stroke_accuracy"] = float((pv[strokes] == y[test][strokes]).mean()) if strokes.any() else float("nan")
+        by_video[v] = entry
+        hits, total = hits + ok, total + len(test)
+    report["by_video"] = by_video
+    if total:
+        report["accuracy"]["classifieur_match_jamais_vu"] = (hits / total, total)
+
     model, mu, sd = _fit(X, y, len(classes))
     bundle = {"model": model, "mu": mu, "sd": sd, "classes": classes, "feature_version": FEATURE_VERSION,
               "cv_accuracy": report["accuracy"]["classifieur_cv"][0], "vlm_accuracy": report["accuracy"]["vlm"][0],
+              "unseen_match_accuracy": hits / total if total else float("nan"),
               "n": len(used), "pose_fps": POSE_FPS}  # features are per frame: tracks must be sampled at this rate
     return bundle, report
 

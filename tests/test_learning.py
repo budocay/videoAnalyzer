@@ -118,3 +118,17 @@ def test_classifier_beats_vlm_handles_missing_vlm_measure():
     assert not classifier_beats_vlm({"cv_accuracy": 0.20, "vlm_accuracy": 0.22})
     assert classifier_beats_vlm({"cv_accuracy": 0.44, "vlm_accuracy": float("nan")})  # hits analysed without VLM
     assert not classifier_beats_vlm(None)
+
+
+def test_train_reports_unseen_match_accuracy():
+    """Each match is held out in turn; matches that are too small are not used as a test."""
+    rng = np.random.default_rng(1)
+    samples = [CL.Sample(rng.normal(c * 3.0, 1.0, 20).astype(np.float32), y, video, f"{video}{y}{i}", "", "")
+               for video, n in (("a", 20), ("b", 20), ("tiny", 3))
+               for c, y in enumerate(["revers", "pas_une_frappe"]) for i in range(n)]
+    bundle, report = CL.train(samples, k=4)
+    assert set(report["by_video"]) == {"a", "b"}
+    assert report["by_video"]["a"]["accuracy"] > 0.9
+    assert report["by_video"]["a"]["false_hits_rejected"][1] == 20
+    assert report["accuracy"]["classifieur_match_jamais_vu"][1] == 80
+    assert bundle["unseen_match_accuracy"] > 0.9

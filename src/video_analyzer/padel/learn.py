@@ -148,6 +148,17 @@ def _train_md(r: dict) -> str:
     md += ["", f"Exemples par classe : {r['counts']}"]
     if r["left_out"]:
         md.append(f"Classes écartées (moins de {CL.MIN_PER_CLASS} exemples) : {r['left_out']}")
+    if r.get("by_video"):
+        md += ["", "## Sur un match jamais vu (entraîné sur les autres matchs)", "",
+               "La validation croisée mélange les frappes d'un même match et surestime. Ici chaque match est testé "
+               "par un classifieur qui ne l'a jamais vu : c'est la précision à attendre sur une nouvelle vidéo.", "",
+               "| Match testé | Frappes | Tout correct | Type de coup correct | Fausses frappes écartées | Vraies frappes perdues |",
+               "|---|---|---|---|---|---|"]
+        for v, e in r["by_video"].items():
+            fr, lost = e.get("false_hits_rejected"), e.get("real_hits_lost")
+            md.append(f"| {v} | {e['n']} | {100 * e['accuracy']:.0f} % | "
+                      + (f"{100 * e['stroke_accuracy']:.0f} %" if e.get("stroke_accuracy") == e.get("stroke_accuracy") and "stroke_accuracy" in e else "—")
+                      + f" | {f'{fr[0]}/{fr[1]}' if fr else '—'} | {f'{lost[0]}/{lost[1]}' if lost else '—'} |")
     md += ["", "## Matrice de confusion (classifieur, validation croisée)", ""] + _conf_md(r["confusion_classifier"])
     return "\n".join(md) + "\n"
 

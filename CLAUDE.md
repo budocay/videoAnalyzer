@@ -28,9 +28,12 @@ samples/        test_synth.mp4, 20260924_114504.mp4 (user's real clip: Samsung H
                 matrix/ (vp9, av1, prores, hdr10 pq, rot90, short odd mkv, avi, mp3+cover) + outputs
 ```
 
-Environment (since 2026-09-28 the only machine is the Windows PC: Ryzen 7 5800X3D + RX 7900 XT 20 GB, the Mac is
-no longer used): `.venv` (Python 3.12, AMD ROCm 7.2.1 torch wheels) made by install.cmd. Do not migrate to uv.
-Run tests with `.venv\Scripts\python -m pytest -q`; the CLI is `.\va.cmd`. The MLX path can no longer be run.
+Environment: two machines, synchronised through git (pull first, push when done).
+- Windows PC (Ryzen 7 5800X3D + RX 7900 XT 20 GB): `.venv` Python 3.12 + AMD ROCm 7.2.1 torch, made by install.cmd.
+  Tests `.venv\Scripts\python -m pytest -q`, CLI `.\va.cmd`. Has the caches of the .mkv match, train1, train2.
+- Mac M1 Max 32 GB (back in use since 2026-10-07): `.venv` Python 3.14 + MLX. Tests `.venv/bin/python -m pytest -q`,
+  CLI `./va.sh`. Has the cache of the Paris final (.mp4, key …5eacad63229d).
+Do not migrate to uv. Videos and caches never travel through git; labelled-hit features do (data/features/).
 
 ## Decisions
 
@@ -205,8 +208,14 @@ continuous (non-montage) match to validate rally/point segmentation; stroke labe
   29 min): 196 user labels, 71 are "pas_une_frappe" (hit precision ~62 %). The Paris-final classifier scored 27 % on it
   (47 % CV on its own match) and rejected 0/71 false hits → CV on one match overestimates. Retrained on this match only:
   ~35 % on strokes, 43/71 false hits rejected, no bandeja_vibora class (2 examples).
-- The Paris final's 315 labels are unusable: its mp4 and cache stayed on the Mac and data/features/ did not exist
-  yet. Training data is now portable (data/features/<key>.npz, written by `padel train`).
+- The Paris final's 315 labels were recovered on 2026-10-07 by running `padel train` on the Mac (its cache is there):
+  data/features/padel_paris_final_hl-5eacad63229d.npz, 251 usable hits → 604 labelled hits over 4 matches.
+- **Honest metric = held-out match** (`classifier.train` → report["by_video"], bundle["unseen_match_accuracy"]):
+  k-fold CV 46 % but 35 % on an unseen match; stroke type alone 18–30 %. Adding the 251 Paris hits changed the other
+  matches by −3…+4 points (noise): more labels of the same kind do not help. On an unseen match (3 seeds):
+  stroke family fond/volée/haut/service 57 % (majority 38 %) = real signal; forehand vs backhand 52 % (majority 52 %)
+  = chance; hit vs not-hit 73 % (majority 70 %) = almost nothing. The pose keypoints carry no reliable side
+  information → next lever is a new input (racket detection / image crops / ball), not more annotation.
 
 ## AMD / NVIDIA GPUs (portable backend)
 
